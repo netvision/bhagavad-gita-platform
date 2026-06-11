@@ -1,13 +1,18 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import SafeRichContent from '../../components/content/SafeRichContent.vue';
-import { chaptersForPhase, fetchLearningIndex, plainText } from './learningApi';
+import ChapterDetailModal from './ChapterDetailModal.vue';
+import { chaptersForPhase, fetchChapter, fetchLearningIndex, plainText } from './learningApi';
 
+const router = useRouter();
 const loading = ref(true);
 const error = ref('');
 const phases = ref([]);
 const chapters = ref([]);
+const modalChapter = ref(null);
+const modalLoading = ref(false);
+const modalError = ref('');
 
 const currentChapter = computed(() => chapters.value[0] || null);
 const currentPhase = computed(() => {
@@ -15,8 +20,42 @@ const currentPhase = computed(() => {
   return phases.value.find((phase) => phase.id === currentChapter.value.curriculum_phase_id) || phases.value[0] || null;
 });
 const phaseChapters = computed(() => currentPhase.value ? chaptersForPhase(chapters.value, currentPhase.value.id) : []);
-const recentChapters = computed(() => chapters.value.slice(0, 4));
+const featuredChapters = computed(() => chapters.value.slice(0, 8));
 const conceptCountLabel = computed(() => `${chapters.value.length} published chapters`);
+
+function phaseName(chapter) {
+  return phases.value.find((phase) => phase.id === chapter.curriculum_phase_id)?.name || 'Common study';
+}
+
+function summaryText(chapter) {
+  return plainText(chapter.summary).slice(0, 150) || 'A guided study chapter with concepts, exhibits, discussion cues, and reflection prompts.';
+}
+
+function outcomeText(chapter) {
+  return plainText(chapter.learning_outcome).slice(0, 132) || 'Understand the central idea and connect it with thoughtful everyday choices.';
+}
+
+async function openChapter(chapterId) {
+  modalLoading.value = true;
+  modalError.value = '';
+  modalChapter.value = null;
+  try {
+    modalChapter.value = await fetchChapter(chapterId);
+  } catch (err) {
+    modalError.value = err.message || 'Unable to load chapter';
+  } finally {
+    modalLoading.value = false;
+  }
+}
+
+function closeChapter() {
+  modalChapter.value = null;
+  modalError.value = '';
+}
+
+function sendExhibitFeedback(exhibit) {
+  router.push({ path: '/feedback', query: { scope_type: 'exhibit', scope_id: exhibit.id } });
+}
 
 onMounted(async () => {
   try {
@@ -33,7 +72,7 @@ onMounted(async () => {
 
 <template>
   <section class="learning-page">
-    <div class="learning-hero">
+    <div class="learning-hero public-hero">
       <div>
         <p class="section-label">Learning dashboard</p>
         <h1>Continue the Gita learning journey</h1>
@@ -41,11 +80,11 @@ onMounted(async () => {
           Study each chapter as a guided sequence of concepts, exhibits, classroom discussion, and reflection.
         </p>
         <div class="hero-actions">
-          <RouterLink v-if="currentChapter" class="primary-link" :to="`/reader/${currentChapter.id}`">Resume reading</RouterLink>
+          <button v-if="currentChapter" class="primary-link" type="button" @click="openChapter(currentChapter.id)">Resume reading</button>
           <RouterLink class="secondary-link" to="/journey">View journey</RouterLink>
         </div>
       </div>
-      <aside class="progress-card">
+      <aside class="progress-card public-progress-card">
         <span>Current phase</span>
         <strong>{{ currentPhase?.name || 'Not started' }}</strong>
         <p>{{ conceptCountLabel }}</p>
@@ -53,53 +92,74 @@ onMounted(async () => {
     </div>
 
     <p v-if="error" class="form-error">{{ error }}</p>
-    <div v-else-if="loading" class="learning-grid">
-      <article class="learning-card">Loading curriculum...</article>
+    <div v-else-if="loading" class="chapter-card-grid">
+      <article class="public-chapter-card">Loading curriculum...</article>
     </div>
-    <div v-else class="dashboard-grid">
-      <article class="focus-panel">
-        <p class="section-label">Continue learning</p>
-        <h2>{{ currentChapter?.title || 'No published chapters yet' }}</h2>
-        <SafeRichContent v-if="currentChapter?.summary" :html="currentChapter.summary" />
-        <p v-else class="muted">Published chapter summaries will appear here as content admins release them.</p>
-        <RouterLink v-if="currentChapter" class="text-link" :to="`/reader/${currentChapter.id}`">Open chapter</RouterLink>
-      </article>
-
-      <article class="learning-card">
-        <p class="section-label">Phase progress</p>
-        <h2>{{ currentPhase?.name || 'Phase sequence' }}</h2>
-        <p class="muted">{{ phaseChapters.length }} chapters in this phase are available for study.</p>
-        <div class="mini-progress"><span :style="{ width: phaseChapters.length ? '28%' : '0%' }" /></div>
-      </article>
-
-      <article class="learning-card">
-        <p class="section-label">Reflection prompt</p>
-        <h2>Pause and connect</h2>
-        <p class="muted">What is one idea from today’s study that can guide a real choice this week?</p>
-        <RouterLink class="text-link" to="/reflections">Write reflection</RouterLink>
-      </article>
-
-      <article class="learning-card shortcut-card">
-        <p class="section-label">Feedback</p>
-        <h2>Help improve the learning material</h2>
-        <p class="muted">Report unclear explanations, broken media, or a classroom suggestion.</p>
-        <RouterLink class="text-link" to="/feedback">Send feedback</RouterLink>
-      </article>
-
-      <section class="chapter-strip">
+    <div v-else class="public-dashboard-stack">
+      <section class="chapter-strip chapter-card-section">
         <div class="strip-header">
           <div>
-            <p class="section-label">Recent chapters</p>
-            <h2>Start with the next available reading</h2>
+            <p class="section-label">Chapter library</p>
+            <h2>Choose a chapter for focused study</h2>
           </div>
           <RouterLink class="text-link" to="/reader">All chapters</RouterLink>
         </div>
-        <RouterLink v-for="chapter in recentChapters" :key="chapter.id" class="chapter-row" :to="`/reader/${chapter.id}`">
-          <span>{{ String(chapter.sort_order).padStart(2, '0') }}</span>
-          <strong>{{ chapter.title }}</strong>
-          <small>{{ plainText(chapter.summary).slice(0, 96) || 'Chapter reading' }}</small>
-        </RouterLink>
+        <div class="chapter-card-grid">
+          <article v-for="chapter in featuredChapters" :key="chapter.id" class="public-chapter-card">
+            <div class="chapter-card-topline">
+              <span>{{ String(chapter.sort_order).padStart(2, '0') }}</span>
+              <small>{{ phaseName(chapter) }}</small>
+            </div>
+            <h3>{{ chapter.title }}</h3>
+            <div class="card-outcome">
+              <strong>Learning outcome</strong>
+              <p>{{ outcomeText(chapter) }}</p>
+            </div>
+            <p class="chapter-card-summary">{{ summaryText(chapter) }}</p>
+            <button class="read-card-button" type="button" @click="openChapter(chapter.id)">Read chapter</button>
+          </article>
+        </div>
       </section>
+
+      <div class="dashboard-grid public-dashboard-grid">
+        <article class="focus-panel public-focus-panel">
+          <p class="section-label">Continue learning</p>
+          <h2>{{ currentChapter?.title || 'No published chapters yet' }}</h2>
+          <SafeRichContent v-if="currentChapter?.summary" :html="currentChapter.summary" />
+          <p v-else class="muted">Published chapter summaries will appear here as content admins release them.</p>
+          <button v-if="currentChapter" class="text-link inline-button" type="button" @click="openChapter(currentChapter.id)">Open chapter</button>
+        </article>
+
+        <article class="learning-card public-small-card">
+          <p class="section-label">Phase progress</p>
+          <h2>{{ currentPhase?.name || 'Phase sequence' }}</h2>
+          <p class="muted">{{ phaseChapters.length }} chapters in this phase are available for study.</p>
+          <div class="mini-progress"><span :style="{ width: phaseChapters.length ? '28%' : '0%' }" /></div>
+        </article>
+
+        <article class="learning-card public-small-card">
+          <p class="section-label">Reflection prompt</p>
+          <h2>Pause and connect</h2>
+          <p class="muted">What is one idea from today's study that can guide a real choice this week?</p>
+          <RouterLink class="text-link" to="/reflections">Write reflection</RouterLink>
+        </article>
+
+        <article class="learning-card shortcut-card public-small-card">
+          <p class="section-label">Feedback</p>
+          <h2>Help improve the learning material</h2>
+          <p class="muted">Report unclear explanations, broken media, or a classroom suggestion.</p>
+          <RouterLink class="text-link" to="/feedback">Send feedback</RouterLink>
+        </article>
+      </div>
     </div>
+
+    <ChapterDetailModal
+      v-if="modalChapter || modalLoading || modalError"
+      :chapter="modalChapter"
+      :loading="modalLoading"
+      :error="modalError"
+      @close="closeChapter"
+      @feedback="sendExhibitFeedback"
+    />
   </section>
 </template>

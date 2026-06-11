@@ -90,6 +90,7 @@ def list_published_chapters(db: Session) -> list[tuple[Chapter, ChapterVersion]]
     version_id = _published_version_subquery()
     return db.execute(
         select(Chapter, ChapterVersion)
+        .options(selectinload(ChapterVersion.concepts))
         .join(ChapterVersion, ChapterVersion.id == version_id)
         .order_by(Chapter.sort_order, Chapter.id)
     ).all()

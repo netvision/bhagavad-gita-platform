@@ -51,6 +51,7 @@ def get_learning_chapters(db: Session = Depends(get_db)) -> list[ChapterListRead
             curriculum_phase_id=chapter.curriculum_phase_id,
             title=version.title,
             summary=version.summary,
+            learning_outcome=_first_learning_outcome(version),
             sort_order=chapter.sort_order,
             status=version.status,
             version_id=version.id,
@@ -230,6 +231,13 @@ def _phase_read(phase) -> PhaseRead:
         description=phase.description,
         sort_order=phase.sort_order,
     )
+
+
+def _first_learning_outcome(version: ChapterVersion) -> str | None:
+    for concept in sorted(version.concepts, key=lambda item: (item.sort_order, item.id)):
+        if concept.learning_outcome:
+            return concept.learning_outcome
+    return None
 
 
 def _concept_read(concept: Concept) -> ConceptRead:

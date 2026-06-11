@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 
 from app.core.security import create_access_token, hash_password
-from app.modules.content.models import Chapter, ChapterVersion
+from app.modules.content.models import Chapter, ChapterVersion, Concept
 from app.modules.curriculum.models import CurriculumPhase
 from app.modules.organizations.models import Organization
 from app.modules.subscriptions.models import Plan, Subscription
@@ -82,6 +82,15 @@ def create_chapter_with_published_and_draft(db_session):
         body="<p>Draft body</p>",
     )
     db_session.add_all([published, draft])
+    db_session.flush()
+    db_session.add(
+        Concept(
+            chapter_version_id=published.id,
+            title="Published Concept",
+            learning_outcome="<p>Published outcome</p>",
+            sort_order=0,
+        )
+    )
     db_session.commit()
     return chapter, published, draft
 
@@ -102,6 +111,7 @@ def test_learning_api_returns_published_version_only_not_draft(client, db_sessio
             "curriculum_phase_id": chapter.curriculum_phase_id,
             "title": published.title,
             "summary": published.summary,
+            "learning_outcome": "<p>Published outcome</p>",
             "sort_order": chapter.sort_order,
             "status": "published",
             "version_id": published.id,

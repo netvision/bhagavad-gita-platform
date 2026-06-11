@@ -30,6 +30,7 @@ class ChapterListRead(BaseModel):
     curriculum_phase_id: int | None = None
     title: str
     summary: str | None = None
+    learning_outcome: str | None = None
     sort_order: int
     status: str
     version_id: int

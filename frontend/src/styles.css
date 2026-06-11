@@ -103,6 +103,34 @@ label {
   padding: 0.75rem clamp(1rem, 3vw, 1.6rem);
 }
 
+.shell .topbar {
+  border-bottom-color: rgba(182, 106, 24, 0.18);
+  background:
+    linear-gradient(90deg, rgba(255, 253, 248, 0.96), rgba(255, 248, 235, 0.94));
+}
+
+.shell .brand-link {
+  color: var(--color-indigo);
+}
+
+.shell .brand-mark {
+  border-color: rgba(216, 166, 65, 0.42);
+  background: var(--color-indigo);
+  color: #fff4df;
+}
+
+.shell .topnav a,
+.shell .user-menu a,
+.shell .user-menu button {
+  border-radius: var(--radius-sm);
+}
+
+.shell .topnav a.router-link-active {
+  border-color: rgba(182, 106, 24, 0.24);
+  background: #fff4df;
+  color: var(--color-indigo);
+}
+
 .brand-link {
   font-weight: 900;
 }
@@ -502,6 +530,415 @@ label {
   padding: clamp(1.1rem, 3vw, 2rem);
 }
 
+.public-hero,
+.reader-library-header,
+.chapter-card-section,
+.public-focus-panel,
+.public-small-card,
+.public-chapter-card,
+.chapter-modal {
+  position: relative;
+  overflow: hidden;
+}
+
+.public-hero::after,
+.reader-library-header::after,
+.public-chapter-card::after,
+.chapter-modal::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  background:
+    linear-gradient(45deg, rgba(182, 106, 24, 0.08) 25%, transparent 25% 75%, rgba(182, 106, 24, 0.08) 75%),
+    linear-gradient(45deg, rgba(216, 166, 65, 0.08) 25%, transparent 25% 75%, rgba(216, 166, 65, 0.08) 75%);
+  background-position: 0 0, 10px 10px;
+  background-size: 20px 20px;
+  opacity: 0.16;
+}
+
+.public-hero {
+  border-color: rgba(182, 106, 24, 0.24);
+  background:
+    linear-gradient(135deg, rgba(255, 252, 246, 0.98), rgba(255, 246, 228, 0.94)),
+    linear-gradient(90deg, rgba(23, 33, 60, 0.08), transparent);
+}
+
+.public-hero::after {
+  inset: auto -2rem -3rem auto;
+  width: 22rem;
+  height: 22rem;
+  border: 1px solid rgba(182, 106, 24, 0.2);
+  border-radius: 50%;
+  opacity: 0.22;
+}
+
+.public-hero h1,
+.reader-library-header h1 {
+  max-width: 780px;
+  color: var(--color-indigo);
+}
+
+.public-progress-card {
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(160deg, var(--color-indigo), #243257),
+    var(--color-indigo);
+}
+
+.public-dashboard-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.4fr);
+}
+
+.public-dashboard-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.public-focus-panel {
+  border-color: rgba(23, 33, 60, 0.14);
+  background: linear-gradient(180deg, #ffffff, #fffaf0);
+}
+
+.public-small-card {
+  align-content: start;
+  border-color: rgba(182, 106, 24, 0.18);
+}
+
+.inline-button,
+.exhibit-meta button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.chapter-card-section {
+  border-color: rgba(182, 106, 24, 0.2);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 240, 0.96));
+}
+
+.chapter-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.public-chapter-card {
+  display: grid;
+  min-height: 22rem;
+  align-content: start;
+  gap: 0.95rem;
+  border: 1px solid rgba(182, 106, 24, 0.18);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(255, 252, 246, 0.98));
+  box-shadow: 0 18px 44px rgba(36, 29, 14, 0.08);
+  padding: 1.1rem;
+}
+
+.public-chapter-card::after {
+  inset: auto -3.2rem -3.2rem auto;
+  width: 9rem;
+  height: 9rem;
+  border: 1px solid rgba(216, 166, 65, 0.32);
+  border-radius: 50%;
+}
+
+.public-chapter-card h2,
+.public-chapter-card h3 {
+  margin-bottom: 0;
+  color: var(--color-indigo);
+  font-size: 1.18rem;
+}
+
+.chapter-card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.chapter-card-topline span {
+  display: inline-grid;
+  width: 2.6rem;
+  height: 2.6rem;
+  place-items: center;
+  border: 1px solid rgba(182, 106, 24, 0.28);
+  border-radius: var(--radius-sm);
+  background: #fff4df;
+  color: var(--color-saffron);
+  font-weight: 950;
+}
+
+.chapter-card-topline small {
+  color: var(--color-muted);
+  font-weight: 800;
+  text-align: right;
+}
+
+.card-outcome {
+  border-left: 3px solid var(--color-gold);
+  background: rgba(255, 244, 223, 0.62);
+  padding: 0.72rem 0.82rem;
+}
+
+.card-outcome strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--color-saffron);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.card-outcome p,
+.chapter-card-summary {
+  margin: 0;
+  color: var(--color-muted);
+  line-height: 1.58;
+}
+
+.read-card-button {
+  width: max-content;
+  margin-top: auto;
+  border-color: rgba(23, 33, 60, 0.18);
+  background: var(--color-indigo);
+  color: #fff;
+  padding: 0.72rem 0.9rem;
+}
+
+.reader-library-page {
+  gap: 1.4rem;
+}
+
+.reader-library-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.32fr);
+  gap: 1rem;
+  align-items: end;
+  border: 1px solid rgba(182, 106, 24, 0.2);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(255, 252, 246, 0.98), rgba(255, 246, 228, 0.94));
+  box-shadow: var(--shadow-soft);
+  padding: clamp(1.2rem, 4vw, 2rem);
+}
+
+.reader-library-header::after {
+  inset: -5rem -3rem auto auto;
+  width: 16rem;
+  height: 16rem;
+  border: 1px solid rgba(182, 106, 24, 0.18);
+  border-radius: 50%;
+}
+
+.reader-filter-panel {
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(182, 106, 24, 0.16);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.82);
+  padding: 1rem;
+}
+
+.reader-card-grid {
+  margin-top: 0;
+}
+
+.reader-chapter-card {
+  min-height: 23rem;
+}
+
+.chapter-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgba(16, 24, 40, 0.56);
+  padding: clamp(0.8rem, 3vw, 2rem);
+}
+
+.chapter-modal {
+  width: min(1060px, calc(100vw - 4rem));
+  max-height: min(88vh, 920px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: grid;
+  gap: 1.25rem;
+  border: 1px solid rgba(216, 166, 65, 0.42);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.99), rgba(255, 250, 240, 0.99));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.24);
+  padding: clamp(1.2rem, 4vw, 2.2rem);
+}
+
+.chapter-modal::after {
+  inset: auto 0 0 auto;
+  width: 17rem;
+  height: 17rem;
+  border: 1px solid rgba(216, 166, 65, 0.26);
+  border-radius: 50%;
+  transform: translate(46%, 46%);
+}
+
+.modal-close {
+  position: sticky;
+  top: 0;
+  justify-self: end;
+  z-index: 2;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-color: rgba(23, 33, 60, 0.14);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--color-indigo);
+  font-size: 1.3rem;
+  line-height: 1;
+}
+
+.modal-state {
+  min-height: 12rem;
+  display: grid;
+  place-items: center;
+  color: var(--color-muted);
+  font-weight: 800;
+}
+
+.modal-chapter-header {
+  border-bottom: 1px solid var(--color-line);
+  padding-bottom: 1rem;
+}
+
+.modal-chapter-header h1 {
+  max-width: 820px;
+  color: var(--color-indigo);
+}
+
+.modal-summary {
+  max-width: 74ch;
+  margin-bottom: 0;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+
+.chapter-number {
+  display: inline-flex;
+  margin-bottom: 0.7rem;
+  border: 1px solid rgba(182, 106, 24, 0.28);
+  border-radius: var(--radius-sm);
+  background: #fff4df;
+  color: var(--color-saffron);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  padding: 0.42rem 0.58rem;
+  text-transform: uppercase;
+}
+
+.modal-concept {
+  display: grid;
+  gap: 1rem;
+  border-top: 1px solid var(--color-line);
+  padding-top: 1.2rem;
+}
+
+.modal-concept-title {
+  display: grid;
+  grid-template-columns: 3rem minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+.modal-concept-title > span {
+  display: inline-grid;
+  width: 2.5rem;
+  height: 2.5rem;
+  place-items: center;
+  border: 1px solid rgba(182, 106, 24, 0.28);
+  border-radius: var(--radius-sm);
+  background: #fff4df;
+  color: var(--color-saffron);
+  font-weight: 950;
+}
+
+.modal-notes,
+.modal-exhibit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.modal-notes article,
+.modal-exhibit {
+  border: 1px solid rgba(182, 106, 24, 0.16);
+  border-radius: var(--radius-sm);
+  background: #fffdf8;
+  padding: 1rem;
+}
+
+.modal-exhibit {
+  background: #fff;
+}
+
+.modal-exhibit .exhibit-meta {
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.modal-exhibit .exhibit-meta button {
+  color: var(--color-indigo);
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.safe-rich-content,
+.safe-rich-content *,
+.chapter-modal,
+.chapter-modal * {
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.safe-rich-content a,
+.chapter-modal a {
+  overflow-wrap: anywhere;
+}
+
+.safe-rich-content img,
+.safe-rich-content video,
+.safe-rich-content iframe,
+.chapter-modal img,
+.chapter-modal video,
+.chapter-modal iframe {
+  max-width: 100%;
+  height: auto;
+}
+
+.safe-rich-content table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.chapter-modal .safe-rich-content p,
+.chapter-modal .safe-rich-content li,
+.chapter-modal .safe-rich-content div,
+.chapter-modal .safe-rich-content span,
+.public-chapter-card .safe-rich-content p,
+.public-chapter-card .safe-rich-content div,
+.public-chapter-card .safe-rich-content span {
+  max-width: 100%;
+  white-space: normal !important;
+}
+
+.chapter-modal .safe-rich-content {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal !important;
+}
+
 .chapter-header {
   border-bottom: 1px solid var(--color-line);
   padding-bottom: 1.1rem;
@@ -890,10 +1327,42 @@ label {
   .learning-hero,
   .dashboard-grid,
   .journey-path,
+  .reader-library-header,
   .reader-shell,
   .concept-notes,
   .exhibit-grid,
+  .modal-notes,
+  .modal-exhibit-grid,
   .reflection-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .public-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chapter-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-chapter-card,
+  .reader-chapter-card {
+    min-height: 0;
+  }
+
+  .chapter-modal-backdrop {
+    align-items: stretch;
+    justify-items: stretch;
+    padding: 0.65rem;
+  }
+
+  .chapter-modal {
+    width: min(340px, 100%);
+    justify-self: center;
+    max-height: calc(100vh - 1.3rem);
+  }
+
+  .modal-concept-title {
     grid-template-columns: 1fr;
   }
 

@@ -43,5 +43,5 @@ export function bySortOrder(left, right) {
 }
 
 export function plainText(html = '') {
-  return String(html).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  return String(html ?? '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
 }

@@ -1,138 +1,136 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import { RouterLink, useRoute, useRouter } from 'vue-router';
-import SafeRichContent from '../../components/content/SafeRichContent.vue';
-import { fetchChapter, fetchLearningIndex } from './learningApi';
+import { useRoute, useRouter } from 'vue-router';
+import ChapterDetailModal from './ChapterDetailModal.vue';
+import { fetchChapter, fetchLearningIndex, plainText } from './learningApi';
 
 const route = useRoute();
 const router = useRouter();
 const loading = ref(true);
 const error = ref('');
+const phases = ref([]);
 const chapters = ref([]);
-const chapter = ref(null);
+const modalChapter = ref(null);
+const modalLoading = ref(false);
+const modalError = ref('');
+const activePhaseId = ref('all');
 
-const selectedChapterId = computed(() => Number(route.params.chapterId || chapters.value[0]?.id || 0));
-const chapterNav = computed(() => chapters.value);
+const selectedChapterId = computed(() => Number(route.params.chapterId || 0));
+const filteredChapters = computed(() => {
+  if (activePhaseId.value === 'all') return chapters.value;
+  return chapters.value.filter((chapter) => chapter.curriculum_phase_id === Number(activePhaseId.value));
+});
 
-function exhibitClass(exhibit) {
-  return ['exhibit-block', `type-${exhibit.field_type}`, exhibit.field_format ? `format-${exhibit.field_format}` : ''];
+function phaseName(chapter) {
+  return phases.value.find((phase) => phase.id === chapter.curriculum_phase_id)?.name || 'Common study';
 }
 
-function isUrl(value) {
-  return /^https?:\/\//i.test(value || '');
+function summaryText(chapter) {
+  return plainText(chapter.summary).slice(0, 168) || 'A guided study chapter with concepts, exhibits, discussion cues, and reflection prompts.';
+}
+
+function outcomeText(chapter) {
+  return plainText(chapter.learning_outcome).slice(0, 140) || 'Understand the central idea and connect it with thoughtful everyday choices.';
 }
 
 async function loadChapter(chapterId) {
   if (!chapterId) return;
-  loading.value = true;
-  error.value = '';
+  modalLoading.value = true;
+  modalError.value = '';
+  modalChapter.value = null;
   try {
-    chapter.value = await fetchChapter(chapterId);
+    modalChapter.value = await fetchChapter(chapterId);
   } catch (err) {
-    error.value = err.message || 'Unable to load chapter';
+    modalError.value = err.message || 'Unable to load chapter';
   } finally {
-    loading.value = false;
+    modalLoading.value = false;
   }
+}
+
+async function openChapter(chapterId) {
+  await router.push(`/reader/${chapterId}`);
+}
+
+function closeChapter() {
+  modalChapter.value = null;
+  modalError.value = '';
+  router.push('/reader');
+}
+
+function sendExhibitFeedback(exhibit) {
+  router.push({ path: '/feedback', query: { scope_type: 'exhibit', scope_id: exhibit.id } });
 }
 
 onMounted(async () => {
   try {
     const data = await fetchLearningIndex();
+    phases.value = data.phases;
     chapters.value = data.chapters;
-    if (!route.params.chapterId && chapters.value[0]) {
-      await router.replace(`/reader/${chapters.value[0].id}`);
-      return;
-    }
-    await loadChapter(selectedChapterId.value);
+    if (selectedChapterId.value) await loadChapter(selectedChapterId.value);
   } catch (err) {
     error.value = err.message || 'Unable to load reader';
+  } finally {
     loading.value = false;
   }
 });
 
 watch(selectedChapterId, (next, previous) => {
   if (next && next !== previous) loadChapter(next);
+  if (!next) {
+    modalChapter.value = null;
+    modalError.value = '';
+  }
 });
 </script>
 
 <template>
-  <section class="reader-shell">
-    <aside class="reader-nav">
-      <p class="section-label">Chapters</p>
-      <RouterLink
-        v-for="item in chapterNav"
-        :key="item.id"
-        :to="`/reader/${item.id}`"
-        class="reader-nav-item"
-        :class="{ active: item.id === selectedChapterId }"
-      >
-        <span>{{ String(item.sort_order).padStart(2, '0') }}</span>
-        {{ item.title }}
-      </RouterLink>
-    </aside>
+  <section class="learning-page reader-library-page">
+    <header class="reader-library-header">
+      <div>
+        <p class="section-label">Reader</p>
+        <h1>Chapter library</h1>
+        <p class="lede">
+          Browse the complete study sequence. Open a chapter for its concepts, teaching material, activities, and exhibits.
+        </p>
+      </div>
+      <div class="reader-filter-panel">
+        <label>
+          Phase
+          <select v-model="activePhaseId">
+            <option value="all">All phases</option>
+            <option v-for="phase in phases" :key="phase.id" :value="phase.id">{{ phase.name }}</option>
+          </select>
+        </label>
+      </div>
+    </header>
 
-    <main class="reader-main">
-      <select
-        class="mobile-chapter-select"
-        :value="selectedChapterId"
-        @change="router.push(`/reader/${$event.target.value}`)"
-      >
-        <option v-for="item in chapterNav" :key="item.id" :value="item.id">{{ item.title }}</option>
-      </select>
-
-      <p v-if="error" class="form-error">{{ error }}</p>
-      <article v-else-if="loading" class="learning-card">Loading chapter...</article>
-      <article v-else-if="chapter" class="reader-article">
-        <header class="chapter-header">
-          <p class="section-label">Chapter {{ chapter.sort_order }}</p>
-          <h1>{{ chapter.title }}</h1>
-          <SafeRichContent v-if="chapter.summary" :html="chapter.summary" />
-        </header>
-
-        <SafeRichContent v-if="chapter.body" :html="chapter.body" />
-
-        <section v-for="concept in chapter.concepts" :key="concept.id" class="concept-section">
-          <div class="concept-heading">
-            <span>{{ String(concept.sort_order + 1).padStart(2, '0') }}</span>
-            <h2>{{ concept.title }}</h2>
-          </div>
-
-          <SafeRichContent v-if="concept.description" :html="concept.description" />
-
-          <div class="concept-notes">
-            <article v-if="concept.learning_outcome">
-              <h3>Learning outcome</h3>
-              <SafeRichContent :html="concept.learning_outcome" />
-            </article>
-            <article v-if="concept.teaching_material">
-              <h3>Teaching material</h3>
-              <SafeRichContent :html="concept.teaching_material" />
-            </article>
-            <article v-if="concept.activities">
-              <h3>Activities</h3>
-              <SafeRichContent :html="concept.activities" />
-            </article>
-          </div>
-
-          <div v-if="concept.exhibits?.length" class="exhibit-grid">
-            <article v-for="exhibit in concept.exhibits" :key="exhibit.id" :class="exhibitClass(exhibit)">
-              <div class="exhibit-meta">
-                <span>{{ exhibit.field_format || exhibit.field_type }}</span>
-                <RouterLink :to="{ path: '/feedback', query: { scope_type: 'exhibit', scope_id: exhibit.id } }">
-                  Feedback
-                </RouterLink>
-              </div>
-              <h3>{{ exhibit.title }}</h3>
-              <SafeRichContent v-if="exhibit.field_type === 'html' && exhibit.content" :html="exhibit.content" />
-              <a v-else-if="isUrl(exhibit.content)" class="media-link" :href="exhibit.content" target="_blank" rel="noreferrer noopener">
-                Open {{ exhibit.field_type }}
-              </a>
-              <p v-else-if="exhibit.content" class="muted">{{ exhibit.content }}</p>
-              <p v-else class="muted">Media asset available in the library.</p>
-            </article>
-          </div>
-        </section>
+    <p v-if="error" class="form-error">{{ error }}</p>
+    <div v-else-if="loading" class="chapter-card-grid">
+      <article class="public-chapter-card">Loading chapters...</article>
+    </div>
+    <div v-else class="chapter-card-grid reader-card-grid">
+      <article v-for="chapter in filteredChapters" :key="chapter.id" class="public-chapter-card reader-chapter-card">
+        <div class="chapter-card-topline">
+          <span>{{ String(chapter.sort_order).padStart(2, '0') }}</span>
+          <small>{{ phaseName(chapter) }}</small>
+        </div>
+        <h2>{{ chapter.title }}</h2>
+        <div class="card-outcome">
+          <strong>Learning outcome</strong>
+          <p>{{ outcomeText(chapter) }}</p>
+        </div>
+        <p class="chapter-card-summary">{{ summaryText(chapter) }}</p>
+        <button class="read-card-button" type="button" @click="openChapter(chapter.id)">Read chapter</button>
       </article>
-    </main>
+    </div>
+
+    <ChapterDetailModal
+      v-if="modalChapter || modalLoading || modalError"
+      :chapter="modalChapter"
+      :loading="modalLoading"
+      :error="modalError"
+      @close="closeChapter"
+      @feedback="sendExhibitFeedback"
+    />
   </section>
 </template>
