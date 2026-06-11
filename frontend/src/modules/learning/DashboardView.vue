@@ -35,6 +35,10 @@ function outcomeText(chapter) {
   return plainText(chapter.learning_outcome).slice(0, 132) || 'Understand the central idea and connect it with thoughtful everyday choices.';
 }
 
+function coverClass(chapter) {
+  return `chapter-cover cover-${((chapter.sort_order || chapter.id || 1) % 6) + 1}`;
+}
+
 async function openChapter(chapterId) {
   modalLoading.value = true;
   modalError.value = '';
@@ -75,9 +79,9 @@ onMounted(async () => {
     <div class="learning-hero public-hero">
       <div>
         <p class="section-label">Learning dashboard</p>
-        <h1>Continue the Gita learning journey</h1>
+        <h1>गीता के गूढ़ ज्ञान को सरल भाषा में समझें</h1>
         <p class="lede">
-          Study each chapter as a guided sequence of concepts, exhibits, classroom discussion, and reflection.
+          विद्यार्थियों के लिए श्लोक, कहानियां और जीवनोपयोगी चिंतन।
         </p>
         <div class="hero-actions">
           <button v-if="currentChapter" class="primary-link" type="button" @click="openChapter(currentChapter.id)">Resume reading</button>
@@ -106,6 +110,9 @@ onMounted(async () => {
         </div>
         <div class="chapter-card-grid">
           <article v-for="chapter in featuredChapters" :key="chapter.id" class="public-chapter-card">
+            <div :class="coverClass(chapter)">
+              <span>अध्याय {{ String(chapter.sort_order).padStart(2, '0') }}</span>
+            </div>
             <div class="chapter-card-topline">
               <span>{{ String(chapter.sort_order).padStart(2, '0') }}</span>
               <small>{{ phaseName(chapter) }}</small>

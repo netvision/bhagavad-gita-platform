@@ -33,6 +33,10 @@ function outcomeText(chapter) {
   return plainText(chapter.learning_outcome).slice(0, 140) || 'Understand the central idea and connect it with thoughtful everyday choices.';
 }
 
+function coverClass(chapter) {
+  return `chapter-cover cover-${((chapter.sort_order || chapter.id || 1) % 6) + 1}`;
+}
+
 async function loadChapter(chapterId) {
   if (!chapterId) return;
   modalLoading.value = true;
@@ -88,9 +92,9 @@ watch(selectedChapterId, (next, previous) => {
     <header class="reader-library-header">
       <div>
         <p class="section-label">Reader</p>
-        <h1>Chapter library</h1>
+        <h1>अध्याय संग्रह</h1>
         <p class="lede">
-          Browse the complete study sequence. Open a chapter for its concepts, teaching material, activities, and exhibits.
+          गीता के अध्यायों को चित्र, जीवन प्रसंग, सीख और चिंतन के साथ पढ़ें।
         </p>
       </div>
       <div class="reader-filter-panel">
@@ -110,6 +114,9 @@ watch(selectedChapterId, (next, previous) => {
     </div>
     <div v-else class="chapter-card-grid reader-card-grid">
       <article v-for="chapter in filteredChapters" :key="chapter.id" class="public-chapter-card reader-chapter-card">
+        <div :class="coverClass(chapter)">
+          <span>अध्याय {{ String(chapter.sort_order).padStart(2, '0') }}</span>
+        </div>
         <div class="chapter-card-topline">
           <span>{{ String(chapter.sort_order).padStart(2, '0') }}</span>
           <small>{{ phaseName(chapter) }}</small>
