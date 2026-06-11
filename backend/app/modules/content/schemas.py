@@ -11,6 +11,20 @@ class PhaseRead(BaseModel):
     sort_order: int
 
 
+class PhaseCreate(BaseModel):
+    name: str
+    slug: str
+    description: str | None = None
+    sort_order: int = 0
+
+
+class PhaseUpdate(BaseModel):
+    name: str
+    slug: str
+    description: str | None = None
+    sort_order: int = 0
+
+
 class ChapterListRead(BaseModel):
     id: int
     curriculum_phase_id: int | None = None
@@ -74,6 +88,13 @@ class ChapterCreate(BaseModel):
     sort_order: int = 0
     summary: str | None = None
     body: str | None = None
+
+
+class ChapterUpdate(BaseModel):
+    curriculum_phase_id: int | None = None
+    title: str
+    slug: str
+    sort_order: int = 0
 
 
 class ChapterVersionRead(BaseModel):

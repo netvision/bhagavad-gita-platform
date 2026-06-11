@@ -204,3 +204,66 @@ def test_only_one_published_version_remains_after_publishing_draft(client, db_se
     db_session.refresh(draft)
     assert published.status == "archived"
     assert draft.status == "published"
+
+
+def test_content_admin_can_manage_phases(client, db_session):
+    organization = create_org(db_session)
+    admin = create_user(db_session, organization, "content_admin", "content-admin-phases")
+
+    create_response = client.post(
+        "/api/admin/content/phases",
+        json={"name": "New Phase", "slug": "new-phase", "description": "A new sequence", "sort_order": 9},
+        headers=auth_headers(admin),
+    )
+    assert create_response.status_code == 201
+    phase_id = create_response.json()["id"]
+
+    update_response = client.put(
+        f"/api/admin/content/phases/{phase_id}",
+        json={"name": "Updated Phase", "slug": "updated-phase", "description": None, "sort_order": 2},
+        headers=auth_headers(admin),
+    )
+    assert update_response.status_code == 200
+    assert update_response.json()["name"] == "Updated Phase"
+    assert update_response.json()["sort_order"] == 2
+
+    delete_response = client.delete(f"/api/admin/content/phases/{phase_id}", headers=auth_headers(admin))
+    assert delete_response.status_code == 204
+
+
+def test_phase_with_chapters_cannot_be_deleted(client, db_session):
+    organization = create_org(db_session)
+    admin = create_user(db_session, organization, "content_admin", "content-admin-phase-delete")
+    chapter, _, _ = create_chapter_with_published_and_draft(db_session)
+
+    response = client.delete(f"/api/admin/content/phases/{chapter.curriculum_phase_id}", headers=auth_headers(admin))
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Move chapters before deleting this phase"
+
+
+def test_content_admin_can_update_imported_chapter_metadata(client, db_session):
+    organization = create_org(db_session)
+    admin = create_user(db_session, organization, "content_admin", "content-admin-metadata")
+    chapter, _, _ = create_chapter_with_published_and_draft(db_session)
+    target_phase = CurriculumPhase(name="Advanced", slug="advanced", sort_order=2)
+    db_session.add(target_phase)
+    db_session.commit()
+
+    response = client.put(
+        f"/api/admin/content/chapters/{chapter.id}",
+        json={
+            "curriculum_phase_id": target_phase.id,
+            "title": "Updated Base Chapter",
+            "slug": "updated-base-chapter",
+            "sort_order": 12,
+        },
+        headers=auth_headers(admin),
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["curriculum_phase_id"] == target_phase.id
+    assert payload["title"] == "Updated Base Chapter"
+    assert payload["slug"] == "updated-base-chapter"
+    assert payload["sort_order"] == 12

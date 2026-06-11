@@ -645,6 +645,33 @@ label {
   overflow: auto;
 }
 
+.phase-manager {
+  display: grid;
+  gap: 0.65rem;
+  border-top: 1px solid var(--color-line);
+  margin-top: 0.6rem;
+  padding-top: 1rem;
+}
+
+.phase-list {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.phase-list button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-muted);
+  text-align: left;
+  padding: 0.55rem;
+}
+
+.phase-list button.active {
+  border-color: rgba(182, 106, 24, 0.3);
+  background: #fff3df;
+  color: var(--color-ink);
+}
+
 .chapter-tree-item,
 .concept-list button {
   width: 100%;

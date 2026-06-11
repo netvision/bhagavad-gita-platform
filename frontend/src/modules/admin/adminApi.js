@@ -4,8 +4,28 @@ export function listAdminChapters() {
   return api('/api/admin/content/chapters');
 }
 
+export function listAdminPhases() {
+  return api('/api/admin/content/phases');
+}
+
+export function createPhase(payload) {
+  return api('/api/admin/content/phases', { method: 'POST', body: payload });
+}
+
+export function updatePhase(phaseId, payload) {
+  return api(`/api/admin/content/phases/${phaseId}`, { method: 'PUT', body: payload });
+}
+
+export function deletePhase(phaseId) {
+  return api(`/api/admin/content/phases/${phaseId}`, { method: 'DELETE' });
+}
+
 export function createChapter(payload) {
   return api('/api/admin/content/chapters', { method: 'POST', body: payload });
+}
+
+export function updateChapter(chapterId, payload) {
+  return api(`/api/admin/content/chapters/${chapterId}`, { method: 'PUT', body: payload });
 }
 
 export function createDraft(chapterId) {

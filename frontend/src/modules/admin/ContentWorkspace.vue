@@ -8,19 +8,26 @@ import {
   createConcept,
   createDraft,
   createExhibit,
+  createPhase,
   deleteConcept,
   deleteExhibit,
+  deletePhase,
   getChapterVersion,
   listAdminChapters,
+  listAdminPhases,
   listConcepts,
   publishChapterVersion,
+  updateChapter,
   updateChapterVersion,
   updateConcept,
   updateExhibit,
+  updatePhase,
 } from './adminApi';
 
 const chapters = ref([]);
+const phases = ref([]);
 const selectedChapter = ref(null);
+const selectedPhase = ref(null);
 const version = ref(null);
 const concepts = ref([]);
 const selectedConcept = ref(null);
@@ -36,6 +43,13 @@ const chapterForm = reactive({
   curriculum_phase_id: '',
   summary: '',
   body: '',
+});
+
+const phaseForm = reactive({
+  name: '',
+  slug: '',
+  description: '',
+  sort_order: 0,
 });
 
 const conceptForm = reactive({
@@ -88,6 +102,14 @@ function fillVersionForm(value) {
   chapterForm.body = value?.body || '';
 }
 
+function fillPhaseForm(value = null) {
+  selectedPhase.value = value;
+  phaseForm.name = value?.name || '';
+  phaseForm.slug = value?.slug || slugify(phaseForm.name || 'phase');
+  phaseForm.description = value?.description || '';
+  phaseForm.sort_order = value?.sort_order ?? phases.value.length + 1;
+}
+
 function fillConceptForm(value) {
   conceptForm.title = value?.title || '';
   conceptForm.slug = value?.slug || '';
@@ -100,6 +122,10 @@ function fillConceptForm(value) {
 
 async function refreshChapters() {
   chapters.value = await listAdminChapters();
+}
+
+async function refreshPhases() {
+  phases.value = await listAdminPhases();
 }
 
 async function selectChapter(chapter) {
@@ -147,12 +173,58 @@ async function createNewChapter() {
   });
 }
 
+async function saveChapterMetadata() {
+  if (!selectedChapter.value) return;
+  await withBusy(async () => {
+    const updated = await updateChapter(selectedChapter.value.id, {
+      curriculum_phase_id: chapterForm.curriculum_phase_id ? Number(chapterForm.curriculum_phase_id) : null,
+      title: selectedChapter.value.title,
+      slug: chapterForm.slug || slugify(selectedChapter.value.title),
+      sort_order: Number(chapterForm.sort_order || 0),
+    });
+    await refreshChapters();
+    const refreshed = chapters.value.find((item) => item.id === updated.id);
+    if (refreshed) selectedChapter.value = refreshed;
+    notice.value = 'Chapter phase, slug, and order saved.';
+  });
+}
+
 async function saveVersion() {
   if (!version.value) return createNewChapter();
   await withBusy(async () => {
     version.value = await updateChapterVersion(version.value.id, versionPayload());
     await refreshChapters();
     notice.value = 'Draft saved.';
+  });
+}
+
+async function savePhase() {
+  await withBusy(async () => {
+    const payload = {
+      name: phaseForm.name,
+      slug: phaseForm.slug || slugify(phaseForm.name),
+      description: phaseForm.description || null,
+      sort_order: Number(phaseForm.sort_order || 0),
+    };
+    if (selectedPhase.value?.id) {
+      await updatePhase(selectedPhase.value.id, payload);
+      notice.value = 'Phase updated.';
+    } else {
+      await createPhase(payload);
+      notice.value = 'Phase created.';
+    }
+    await refreshPhases();
+    fillPhaseForm(null);
+  });
+}
+
+async function removePhase() {
+  if (!selectedPhase.value?.id) return;
+  await withBusy(async () => {
+    await deletePhase(selectedPhase.value.id);
+    await refreshPhases();
+    fillPhaseForm(null);
+    notice.value = 'Phase deleted.';
   });
 }
 
@@ -242,8 +314,10 @@ async function removeExhibit(exhibit) {
 
 onMounted(async () => {
   await withBusy(async () => {
+    await refreshPhases();
     await refreshChapters();
     if (chapters.value[0]) await selectChapter(chapters.value[0]);
+    fillPhaseForm(phases.value[0] || null);
   });
 });
 </script>
@@ -280,6 +354,35 @@ onMounted(async () => {
           <strong>{{ chapter.title }}</strong>
           <small>{{ chapter.current_status || 'no version' }}</small>
         </button>
+
+        <section class="phase-manager">
+          <div class="panel-heading">
+            <div>
+              <p class="section-label">Phases</p>
+              <h2>{{ phases.length }}</h2>
+            </div>
+            <button type="button" @click="fillPhaseForm(null)">New</button>
+          </div>
+          <div class="phase-list">
+            <button
+              v-for="phase in phases"
+              :key="phase.id"
+              type="button"
+              :class="{ active: selectedPhase?.id === phase.id }"
+              @click="fillPhaseForm(phase)"
+            >
+              {{ phase.sort_order }}. {{ phase.name }}
+            </button>
+          </div>
+          <label>Name<input v-model.trim="phaseForm.name" @input="!selectedPhase && (phaseForm.slug = slugify(phaseForm.name))" /></label>
+          <label>Slug<input v-model.trim="phaseForm.slug" /></label>
+          <label>Order<input v-model.number="phaseForm.sort_order" type="number" /></label>
+          <label>Description<textarea v-model.trim="phaseForm.description" /></label>
+          <div class="button-row">
+            <button type="button" class="primary-action" :disabled="busy || !phaseForm.name" @click="savePhase">Save phase</button>
+            <button type="button" :disabled="busy || !selectedPhase" @click="removePhase">Delete</button>
+          </div>
+        </section>
       </aside>
 
       <main class="chapter-editor">
@@ -298,17 +401,23 @@ onMounted(async () => {
           <div class="form-row">
             <label>
               Slug
-              <input v-model.trim="chapterForm.slug" :disabled="Boolean(version)" />
+              <input v-model.trim="chapterForm.slug" />
             </label>
             <label>
-              Phase ID
-              <input v-model.number="chapterForm.curriculum_phase_id" type="number" min="1" :disabled="Boolean(version)" />
+              Phase
+              <select v-model.number="chapterForm.curriculum_phase_id">
+                <option value="">No phase</option>
+                <option v-for="phase in phases" :key="phase.id" :value="phase.id">{{ phase.sort_order }}. {{ phase.name }}</option>
+              </select>
             </label>
             <label>
               Order
-              <input v-model.number="chapterForm.sort_order" type="number" :disabled="Boolean(version)" />
+              <input v-model.number="chapterForm.sort_order" type="number" />
             </label>
           </div>
+          <button v-if="selectedChapter" type="button" :disabled="busy" @click="saveChapterMetadata">
+            Save phase, slug, and order
+          </button>
           <label>
             Summary
             <RichTextEditor v-model="chapterForm.summary" placeholder="Chapter summary" />

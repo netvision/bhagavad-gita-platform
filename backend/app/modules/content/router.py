@@ -10,6 +10,7 @@ from app.modules.content.schemas import (
     ChapterCreate,
     ChapterDetailRead,
     ChapterListRead,
+    ChapterUpdate,
     ChapterVersionRead,
     ChapterVersionUpdate,
     ConceptCreate,
@@ -18,7 +19,9 @@ from app.modules.content.schemas import (
     ExhibitCreate,
     ExhibitRead,
     ExhibitUpdate,
+    PhaseCreate,
     PhaseRead,
+    PhaseUpdate,
 )
 
 
@@ -78,9 +81,48 @@ def get_admin_chapters(db: Session = Depends(get_db)) -> list[AdminChapterRead]:
     ]
 
 
+@admin_router.get("/phases", response_model=list[PhaseRead])
+def get_admin_phases(db: Session = Depends(get_db)) -> list[PhaseRead]:
+    return [_phase_read(phase) for phase in service.list_phases(db)]
+
+
+@admin_router.post("/phases", response_model=PhaseRead, status_code=status.HTTP_201_CREATED)
+def post_admin_phase(payload: PhaseCreate, db: Session = Depends(get_db)) -> PhaseRead:
+    return _phase_read(service.create_phase(db, payload))
+
+
+@admin_router.put("/phases/{phase_id}", response_model=PhaseRead)
+def put_admin_phase(phase_id: int, payload: PhaseUpdate, db: Session = Depends(get_db)) -> PhaseRead:
+    return _phase_read(service.update_phase(db, phase_id, payload))
+
+
+@admin_router.delete("/phases/{phase_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_admin_phase(phase_id: int, db: Session = Depends(get_db)) -> Response:
+    service.delete_phase(db, phase_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @admin_router.post("/chapters", response_model=ChapterVersionRead, status_code=status.HTTP_201_CREATED)
 def post_admin_chapter(payload: ChapterCreate, db: Session = Depends(get_db)) -> ChapterVersion:
     return service.create_chapter(db, payload)
+
+
+@admin_router.put("/chapters/{chapter_id}", response_model=AdminChapterRead)
+def put_admin_chapter(chapter_id: int, payload: ChapterUpdate, db: Session = Depends(get_db)) -> AdminChapterRead:
+    chapter = service.update_chapter(db, chapter_id, payload)
+    current = sorted(
+        chapter.versions,
+        key=lambda version: (version.status != "published", -version.version_number),
+    )[0] if chapter.versions else None
+    return AdminChapterRead(
+        id=chapter.id,
+        curriculum_phase_id=chapter.curriculum_phase_id,
+        title=chapter.title,
+        slug=chapter.slug,
+        sort_order=chapter.sort_order,
+        current_status=current.status if current else None,
+        current_version_id=current.id if current else None,
+    )
 
 
 @admin_router.post("/chapters/{chapter_id}/draft", response_model=ChapterVersionRead, status_code=status.HTTP_201_CREATED)
@@ -177,6 +219,16 @@ def _chapter_detail(
         version_title=version.title,
         body=version.body,
         concepts=[_concept_read(concept) for concept in sorted(version.concepts, key=lambda item: (item.sort_order, item.id))],
+    )
+
+
+def _phase_read(phase) -> PhaseRead:
+    return PhaseRead(
+        id=phase.id,
+        name=phase.name,
+        slug=phase.slug,
+        description=phase.description,
+        sort_order=phase.sort_order,
     )
 
 

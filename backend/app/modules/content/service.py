@@ -9,11 +9,14 @@ from app.core.sanitizer import sanitize_rich_html
 from app.modules.content.models import Chapter, ChapterVersion, Concept, Exhibit
 from app.modules.content.schemas import (
     ChapterCreate,
+    ChapterUpdate,
     ChapterVersionUpdate,
     ConceptCreate,
     ConceptUpdate,
     ExhibitCreate,
     ExhibitUpdate,
+    PhaseCreate,
+    PhaseUpdate,
 )
 from app.modules.curriculum.models import CurriculumPhase
 
@@ -23,6 +26,51 @@ ALLOWED_EXHIBIT_FIELD_TYPES = {"html", "link", "image", "audio", "video"}
 
 def list_phases(db: Session) -> list[CurriculumPhase]:
     return db.scalars(select(CurriculumPhase).order_by(CurriculumPhase.sort_order, CurriculumPhase.id)).all()
+
+
+def create_phase(db: Session, payload: PhaseCreate) -> CurriculumPhase:
+    phase = CurriculumPhase(
+        name=payload.name,
+        slug=payload.slug,
+        description=payload.description,
+        sort_order=payload.sort_order,
+    )
+    db.add(phase)
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Phase slug already exists") from exc
+    db.refresh(phase)
+    return phase
+
+
+def update_phase(db: Session, phase_id: int, payload: PhaseUpdate) -> CurriculumPhase:
+    phase = db.get(CurriculumPhase, phase_id)
+    if phase is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phase not found")
+    phase.name = payload.name
+    phase.slug = payload.slug
+    phase.description = payload.description
+    phase.sort_order = payload.sort_order
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Phase slug already exists") from exc
+    db.refresh(phase)
+    return phase
+
+
+def delete_phase(db: Session, phase_id: int) -> None:
+    phase = db.get(CurriculumPhase, phase_id)
+    if phase is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Phase not found")
+    chapter_count = db.scalar(select(func.count()).select_from(Chapter).where(Chapter.curriculum_phase_id == phase_id)) or 0
+    if chapter_count:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Move chapters before deleting this phase")
+    db.delete(phase)
+    db.commit()
 
 
 def _published_version_subquery():
@@ -94,6 +142,25 @@ def create_chapter(db: Session, payload: ChapterCreate) -> ChapterVersion:
     db.commit()
     db.refresh(version)
     return version
+
+
+def update_chapter(db: Session, chapter_id: int, payload: ChapterUpdate) -> Chapter:
+    chapter = db.get(Chapter, chapter_id)
+    if chapter is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chapter not found")
+    if payload.curriculum_phase_id is not None and db.get(CurriculumPhase, payload.curriculum_phase_id) is None:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Phase not found")
+    chapter.curriculum_phase_id = payload.curriculum_phase_id
+    chapter.title = payload.title
+    chapter.slug = payload.slug
+    chapter.sort_order = payload.sort_order
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Chapter slug already exists in this phase") from exc
+    db.refresh(chapter)
+    return chapter
 
 
 def create_draft_from_current(db: Session, chapter_id: int) -> ChapterVersion:
