@@ -1,0 +1,29 @@
+:root {
+  --color-ink: #101828;
+  --color-indigo: #17213c;
+  --color-indigo-soft: #23345f;
+  --color-saffron: #b66a18;
+  --color-gold: #d8a641;
+  --color-paper: #fffaf0;
+  --color-surface: #ffffff;
+  --color-line: #e3d7bf;
+  --color-muted: #667085;
+  --color-success: #28705f;
+  --color-danger: #9f3f35;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --shadow-soft: 0 16px 44px rgba(31, 24, 12, 0.1);
+  --shadow-panel: 0 22px 60px rgba(23, 33, 60, 0.12);
+  --space-page: clamp(1rem, 3vw, 1.6rem);
+  --bg: var(--color-paper);
+  --surface: #fffdf8;
+  --surface-muted: #f0e6d7;
+  --ink: var(--color-ink);
+  --muted: var(--color-muted);
+  --line: var(--color-line);
+  --accent: var(--color-indigo-soft);
+  --accent-strong: var(--color-indigo);
+  --saffron: var(--color-saffron);
+  --danger: var(--color-danger);
+  --shadow: var(--shadow-soft);
+}

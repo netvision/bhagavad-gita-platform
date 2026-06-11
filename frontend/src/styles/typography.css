@@ -1,0 +1,32 @@
+:root {
+  font-family: "Nirmala UI", "Segoe UI", system-ui, sans-serif;
+  color: var(--color-ink);
+}
+
+h1,
+h2,
+h3,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  font-size: clamp(2rem, 4vw, 3.45rem);
+  line-height: 1.04;
+  letter-spacing: 0;
+}
+
+h2 {
+  font-size: clamp(1.35rem, 2vw, 1.8rem);
+  line-height: 1.16;
+}
+
+h3 {
+  font-size: 1.05rem;
+  line-height: 1.28;
+}
+
+p,
+li {
+  line-height: 1.68;
+}
