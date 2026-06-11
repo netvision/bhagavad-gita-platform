@@ -272,6 +272,7 @@ label {
   display: grid;
   gap: 1.2rem;
   width: min(1180px, 100%);
+  margin-inline: auto;
 }
 
 .learning-hero,
