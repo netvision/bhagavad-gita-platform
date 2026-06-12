@@ -1371,6 +1371,17 @@ label {
   width: min(980px, calc(100vw - 4rem));
 }
 
+.concept-detail-modal .modal-notes,
+.concept-detail-modal .modal-exhibit-grid {
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+.concept-detail-modal .modal-notes article,
+.concept-detail-modal .modal-exhibit {
+  width: 100%;
+}
+
 .concept-modal-section {
   display: grid;
   gap: 1rem;
