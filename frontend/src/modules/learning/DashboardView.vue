@@ -2,17 +2,13 @@
 import { computed, onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import SafeRichContent from '../../components/content/SafeRichContent.vue';
-import ChapterDetailModal from './ChapterDetailModal.vue';
-import { chaptersForPhase, fetchChapter, fetchLearningIndex, plainText } from './learningApi';
+import { chaptersForPhase, fetchLearningIndex, plainText } from './learningApi';
 
 const router = useRouter();
 const loading = ref(true);
 const error = ref('');
 const phases = ref([]);
 const chapters = ref([]);
-const modalChapter = ref(null);
-const modalLoading = ref(false);
-const modalError = ref('');
 
 const currentChapter = computed(() => chapters.value[0] || null);
 const currentPhase = computed(() => {
@@ -39,26 +35,8 @@ function coverClass(chapter) {
   return `chapter-cover cover-${((chapter.sort_order || chapter.id || 1) % 6) + 1}`;
 }
 
-async function openChapter(chapterId) {
-  modalLoading.value = true;
-  modalError.value = '';
-  modalChapter.value = null;
-  try {
-    modalChapter.value = await fetchChapter(chapterId);
-  } catch (err) {
-    modalError.value = err.message || 'Unable to load chapter';
-  } finally {
-    modalLoading.value = false;
-  }
-}
-
-function closeChapter() {
-  modalChapter.value = null;
-  modalError.value = '';
-}
-
-function sendExhibitFeedback(exhibit) {
-  router.push({ path: '/feedback', query: { scope_type: 'exhibit', scope_id: exhibit.id } });
+function openChapter(chapterId) {
+  router.push(`/reader/${chapterId}`);
 }
 
 onMounted(async () => {
@@ -109,7 +87,14 @@ onMounted(async () => {
           <RouterLink class="text-link" to="/reader">All chapters</RouterLink>
         </div>
         <div class="chapter-card-grid">
-          <article v-for="chapter in featuredChapters" :key="chapter.id" class="public-chapter-card">
+          <article
+            v-for="chapter in featuredChapters"
+            :key="chapter.id"
+            class="public-chapter-card clickable-card"
+            tabindex="0"
+            @click="openChapter(chapter.id)"
+            @keydown.enter="openChapter(chapter.id)"
+          >
             <div :class="coverClass(chapter)">
               <span>अध्याय {{ String(chapter.sort_order).padStart(2, '0') }}</span>
             </div>
@@ -123,7 +108,7 @@ onMounted(async () => {
               <p>{{ outcomeText(chapter) }}</p>
             </div>
             <p class="chapter-card-summary">{{ summaryText(chapter) }}</p>
-            <button class="read-card-button" type="button" @click="openChapter(chapter.id)">Read chapter</button>
+            <button class="read-card-button" type="button" @click.stop="openChapter(chapter.id)">Read chapter</button>
           </article>
         </div>
       </section>
@@ -159,14 +144,5 @@ onMounted(async () => {
         </article>
       </div>
     </div>
-
-    <ChapterDetailModal
-      v-if="modalChapter || modalLoading || modalError"
-      :chapter="modalChapter"
-      :loading="modalLoading"
-      :error="modalError"
-      @close="closeChapter"
-      @feedback="sendExhibitFeedback"
-    />
   </section>
 </template>
