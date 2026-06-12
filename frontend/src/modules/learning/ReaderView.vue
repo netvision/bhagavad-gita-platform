@@ -25,6 +25,12 @@ const chapterPhase = computed(() => {
   if (!chapter.value) return null;
   return phases.value.find((phase) => phase.id === chapter.value.curriculum_phase_id) || null;
 });
+const chapterConcepts = computed(() => [...(chapter.value?.concepts || [])].sort((left, right) => {
+  return (left.sort_order ?? 0) - (right.sort_order ?? 0) || left.id - right.id;
+}));
+const exhibitCount = computed(() => {
+  return chapterConcepts.value.reduce((total, concept) => total + (concept.exhibits?.length || 0), 0);
+});
 
 function phaseName(item) {
   return phases.value.find((phase) => phase.id === item.curriculum_phase_id)?.name || 'Common study';
@@ -41,6 +47,10 @@ function outcomeText(item) {
 function conceptSummary(concept) {
   return plainText(concept.description || concept.learning_outcome || concept.teaching_material).slice(0, 150)
     || 'Open this concept to study the explanation, activities, and supporting exhibits.';
+}
+
+function conceptOutcome(concept) {
+  return plainText(concept.learning_outcome).slice(0, 120) || 'Study the core idea, examples, and classroom activity.';
 }
 
 function coverClass(item) {
@@ -161,7 +171,24 @@ watch(selectedChapterId, (next, previous) => {
           </div>
         </header>
 
-        <SafeRichContent v-if="chapter.body" :html="chapter.body" />
+        <section class="chapter-study-brief" aria-label="Chapter study brief">
+          <article>
+            <span>Learning outcome</span>
+            <p>{{ outcomeText(chapter) }}</p>
+          </article>
+          <article>
+            <span>Concepts</span>
+            <strong>{{ chapterConcepts.length }}</strong>
+          </article>
+          <article>
+            <span>Exhibits</span>
+            <strong>{{ exhibitCount }}</strong>
+          </article>
+        </section>
+
+        <section v-if="chapter.body" class="chapter-body-panel">
+          <SafeRichContent :html="chapter.body" />
+        </section>
 
         <section class="concept-card-section">
           <div class="strip-header">
@@ -172,18 +199,25 @@ watch(selectedChapterId, (next, previous) => {
           </div>
           <div class="concept-card-grid">
             <article
-              v-for="concept in chapter.concepts"
+              v-for="concept in chapterConcepts"
               :key="concept.id"
               class="concept-card clickable-card"
               tabindex="0"
               @click="selectedConcept = concept"
               @keydown.enter="selectedConcept = concept"
             >
-              <div class="concept-card-number">{{ String(concept.sort_order + 1).padStart(2, '0') }}</div>
+              <div class="concept-card-top">
+                <div class="concept-card-number">{{ String(concept.sort_order + 1).padStart(2, '0') }}</div>
+                <span>{{ concept.exhibits?.length || 0 }} exhibits</span>
+              </div>
               <h3>{{ concept.title }}</h3>
+              <div class="concept-card-outcome">
+                <strong>Outcome</strong>
+                <p>{{ conceptOutcome(concept) }}</p>
+              </div>
               <p>{{ conceptSummary(concept) }}</p>
               <div class="concept-card-footer">
-                <span>{{ concept.exhibits?.length || 0 }} exhibits</span>
+                <span>Concept detail</span>
                 <button type="button" @click.stop="selectedConcept = concept">Open concept</button>
               </div>
             </article>
