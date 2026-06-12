@@ -21,8 +21,8 @@ defineEmits(['draft', 'publish', 'save']);
         <dd>{{ version.published_at ? new Date(version.published_at).toLocaleString() : 'Not published' }}</dd>
       </div>
     </dl>
-    <button type="button" class="primary-action" :disabled="busy || !version || version.status !== 'draft'" @click="$emit('save')">
-      Save draft
+    <button type="button" class="primary-action" :disabled="busy || (version && version.status !== 'draft')" @click="$emit('save')">
+      {{ version ? 'Save draft' : 'Create chapter draft' }}
     </button>
     <button type="button" :disabled="busy || !version" @click="$emit('draft')">
       Create draft

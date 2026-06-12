@@ -32,6 +32,7 @@ const version = ref(null);
 const concepts = ref([]);
 const selectedConcept = ref(null);
 const selectedExhibit = ref(null);
+const activeSection = ref('chapter');
 const busy = ref(false);
 const error = ref('');
 const notice = ref('');
@@ -249,12 +250,21 @@ async function publishDraft() {
 }
 
 function newConcept() {
+  activeSection.value = 'concepts';
   selectedConcept.value = null;
   selectedExhibit.value = null;
   fillConceptForm(null);
 }
 
 function selectConcept(concept) {
+  activeSection.value = 'concepts';
+  selectedConcept.value = concept;
+  selectedExhibit.value = concept.exhibits?.[0] || null;
+  fillConceptForm(concept);
+}
+
+function selectConceptForExhibits(concept) {
+  activeSection.value = 'exhibits';
   selectedConcept.value = concept;
   selectedExhibit.value = concept.exhibits?.[0] || null;
   fillConceptForm(concept);
@@ -326,8 +336,8 @@ onMounted(async () => {
   <section class="content-workspace">
     <header class="page-heading">
       <p class="section-label">Content workspace</p>
-      <h1>Chapter, concept, and exhibit editor</h1>
-      <p class="lede">Draft safely, keep published learner content stable, then publish when review is complete.</p>
+      <h1>Curriculum editor</h1>
+      <p class="lede">Build one chapter at a time: prepare chapter details, shape concepts, add exhibits, then publish when review is complete.</p>
     </header>
 
     <p v-if="error" class="form-error">{{ error }}</p>
@@ -340,7 +350,7 @@ onMounted(async () => {
             <p class="section-label">Chapters</p>
             <h2>{{ chapters.length }}</h2>
           </div>
-          <button type="button" @click="selectedChapter = null; version = null; concepts = []; fillVersionForm(null)">New</button>
+          <button type="button" @click="selectedChapter = null; version = null; concepts = []; activeSection = 'chapter'; fillVersionForm(null)">New</button>
         </div>
         <button
           v-for="chapter in chapters"
@@ -386,13 +396,39 @@ onMounted(async () => {
       </aside>
 
       <main class="chapter-editor">
-        <section class="editor-panel">
+        <section class="editor-panel editor-context-panel">
+          <div>
+            <p class="section-label">Current chapter</p>
+            <h2>{{ chapterForm.title || 'Untitled chapter' }}</h2>
+            <p class="muted">
+              {{ version ? `Version ${version.version_number}` : 'New draft' }} - {{ concepts.length }} concepts
+            </p>
+          </div>
+          <strong class="status-chip">{{ version?.status || 'draft' }}</strong>
+        </section>
+
+        <nav class="editor-workflow-tabs" aria-label="Content editing sections">
+          <button type="button" :class="{ active: activeSection === 'chapter' }" @click="activeSection = 'chapter'">
+            <span>1</span>
+            Chapter
+          </button>
+          <button type="button" :class="{ active: activeSection === 'concepts' }" :disabled="!version" @click="activeSection = 'concepts'">
+            <span>2</span>
+            Concepts
+          </button>
+          <button type="button" :class="{ active: activeSection === 'exhibits' }" :disabled="!selectedConcept" @click="activeSection = 'exhibits'">
+            <span>3</span>
+            Exhibits
+          </button>
+        </nav>
+
+        <section v-if="activeSection === 'chapter'" class="editor-panel">
           <div class="panel-heading">
             <div>
-              <p class="section-label">Chapter version</p>
-              <h2>{{ version ? `Version ${version.version_number}` : 'New chapter draft' }}</h2>
+              <p class="section-label">Chapter setup</p>
+              <h2>{{ version ? 'Edit chapter draft' : 'New chapter draft' }}</h2>
             </div>
-            <strong class="status-chip">{{ version?.status || 'draft' }}</strong>
+            <button v-if="selectedChapter" type="button" :disabled="busy" @click="saveChapterMetadata">Save metadata</button>
           </div>
           <label>
             Title
@@ -415,82 +451,112 @@ onMounted(async () => {
               <input v-model.number="chapterForm.sort_order" type="number" />
             </label>
           </div>
-          <button v-if="selectedChapter" type="button" :disabled="busy" @click="saveChapterMetadata">
-            Save phase, slug, and order
-          </button>
           <label>
             Summary
-            <RichTextEditor v-model="chapterForm.summary" placeholder="Chapter summary" />
+            <RichTextEditor v-model="chapterForm.summary" :disabled="version && !canEditDraft" placeholder="Chapter summary" />
           </label>
           <label>
             Body
-            <RichTextEditor v-model="chapterForm.body" placeholder="Chapter body" />
+            <RichTextEditor v-model="chapterForm.body" :disabled="version && !canEditDraft" placeholder="Chapter body" />
           </label>
         </section>
 
-        <section class="editor-panel">
+        <section v-if="activeSection === 'concepts'" class="editor-panel">
           <div class="panel-heading">
             <div>
-              <p class="section-label">Concepts</p>
+              <p class="section-label">Concept editor</p>
               <h2>{{ selectedConcept?.title || 'New concept' }}</h2>
             </div>
             <button type="button" :disabled="!canEditDraft" @click="newConcept">New concept</button>
           </div>
-          <div class="concept-list">
-            <button
-              v-for="concept in concepts"
-              :key="concept.id"
-              type="button"
-              :class="{ active: selectedConcept?.id === concept.id }"
-              @click="selectConcept(concept)"
-            >
-              {{ concept.sort_order }}. {{ concept.title }}
-            </button>
-          </div>
-          <label>
-            Title
-            <input v-model.trim="conceptForm.title" :disabled="!canEditDraft" />
-          </label>
-          <div class="form-row">
-            <label>
-              Slug
-              <input v-model.trim="conceptForm.slug" :disabled="!canEditDraft" />
-            </label>
-            <label>
-              Order
-              <input v-model.number="conceptForm.sort_order" type="number" :disabled="!canEditDraft" />
-            </label>
-          </div>
-          <label>Description<RichTextEditor v-model="conceptForm.description" /></label>
-          <label>Learning outcome<RichTextEditor v-model="conceptForm.learning_outcome" /></label>
-          <label>Teaching material<RichTextEditor v-model="conceptForm.teaching_material" /></label>
-          <label>Activities<RichTextEditor v-model="conceptForm.activities" /></label>
-          <div class="button-row">
-            <button type="button" class="primary-action" :disabled="busy || !canEditDraft || !conceptForm.title" @click="saveConcept">Save concept</button>
-            <button type="button" :disabled="busy || !canEditDraft || !selectedConcept" @click="removeConcept">Delete concept</button>
+          <div class="editor-split">
+            <aside class="editor-rail">
+              <button
+                v-for="concept in concepts"
+                :key="concept.id"
+                type="button"
+                :class="{ active: selectedConcept?.id === concept.id }"
+                @click="selectConcept(concept)"
+              >
+                <span>{{ concept.sort_order }}</span>
+                <strong>{{ concept.title }}</strong>
+                <small>{{ concept.exhibits?.length || 0 }} exhibits</small>
+              </button>
+            </aside>
+            <div class="editor-form-stack">
+              <label>
+                Title
+                <input v-model.trim="conceptForm.title" :disabled="!canEditDraft" />
+              </label>
+              <div class="form-row">
+                <label>
+                  Slug
+                  <input v-model.trim="conceptForm.slug" :disabled="!canEditDraft" />
+                </label>
+                <label>
+                  Order
+                  <input v-model.number="conceptForm.sort_order" type="number" :disabled="!canEditDraft" />
+                </label>
+              </div>
+              <label>Description<RichTextEditor v-model="conceptForm.description" :disabled="!canEditDraft" /></label>
+              <label>Learning outcome<RichTextEditor v-model="conceptForm.learning_outcome" :disabled="!canEditDraft" /></label>
+              <label>Teaching material<RichTextEditor v-model="conceptForm.teaching_material" :disabled="!canEditDraft" /></label>
+              <label>Activities<RichTextEditor v-model="conceptForm.activities" :disabled="!canEditDraft" /></label>
+              <div class="button-row">
+                <button type="button" class="primary-action" :disabled="busy || !canEditDraft || !conceptForm.title" @click="saveConcept">Save concept</button>
+                <button type="button" :disabled="busy || !canEditDraft || !selectedConcept" @click="removeConcept">Delete concept</button>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section v-if="selectedConcept" class="editor-panel">
+        <section v-if="activeSection === 'exhibits'" class="editor-panel">
           <div class="panel-heading">
             <div>
-              <p class="section-label">Exhibits</p>
-              <h2>{{ selectedConcept.exhibits?.length || 0 }} items</h2>
+              <p class="section-label">Exhibit editor</p>
+              <h2>{{ selectedConcept?.title || 'Choose a concept' }}</h2>
             </div>
-            <button type="button" :disabled="!canEditDraft" @click="selectedExhibit = null">New exhibit</button>
+            <button type="button" :disabled="!canEditDraft || !selectedConcept" @click="selectedExhibit = null">New exhibit</button>
           </div>
-          <div class="concept-list">
-            <button
-              v-for="exhibit in selectedConcept.exhibits"
-              :key="exhibit.id"
-              type="button"
-              :class="{ active: selectedExhibit?.id === exhibit.id }"
-              @click="selectedExhibit = exhibit"
-            >
-              {{ exhibit.sort_order }}. {{ exhibit.title }}
-            </button>
+          <div class="editor-split">
+            <aside class="editor-rail">
+              <button
+                v-for="concept in concepts"
+                :key="concept.id"
+                type="button"
+                :class="{ active: selectedConcept?.id === concept.id }"
+                @click="selectConceptForExhibits(concept)"
+              >
+                <span>{{ concept.sort_order }}</span>
+                <strong>{{ concept.title }}</strong>
+                <small>{{ concept.exhibits?.length || 0 }} exhibits</small>
+              </button>
+            </aside>
+            <div class="editor-form-stack">
+              <div v-if="selectedConcept" class="concept-list exhibit-list">
+                <button
+                  v-for="exhibit in selectedConcept.exhibits"
+                  :key="exhibit.id"
+                  type="button"
+                  :class="{ active: selectedExhibit?.id === exhibit.id }"
+                  @click="selectedExhibit = exhibit"
+                >
+                  {{ exhibit.sort_order }}. {{ exhibit.title }}
+                </button>
+              </div>
+              <ExhibitEditor
+                v-if="selectedConcept"
+                :exhibit="selectedExhibit"
+                :busy="busy || !canEditDraft"
+                @save="saveExhibit"
+                @delete="removeExhibit"
+              />
+              <article v-else class="empty-editor-state">
+                <h3>Select a concept first</h3>
+                <p class="muted">Exhibits are attached to concepts, so choose a concept before creating stories, shlokas, links, or media.</p>
+              </article>
+            </div>
           </div>
-          <ExhibitEditor :exhibit="selectedExhibit" :busy="busy || !canEditDraft" @save="saveExhibit" @delete="removeExhibit" />
         </section>
       </main>
 

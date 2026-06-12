@@ -1759,6 +1759,59 @@ label {
   box-shadow: none;
 }
 
+.editor-context-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.editor-context-panel h2,
+.editor-context-panel p {
+  margin-bottom: 0;
+}
+
+.editor-workflow-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+.editor-workflow-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.7rem;
+  border-color: rgba(182, 106, 24, 0.18);
+  background: #fffaf0;
+  color: var(--color-muted);
+  font-weight: 850;
+  padding: 0.82rem 0.95rem;
+}
+
+.editor-workflow-tabs button span {
+  display: inline-grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--color-saffron);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.editor-workflow-tabs button.active {
+  border-color: rgba(216, 126, 34, 0.45);
+  background: linear-gradient(90deg, #fff3df, #fffaf0);
+  color: var(--color-ink);
+  box-shadow: 0 12px 24px rgba(116, 69, 28, 0.08);
+}
+
+.editor-workflow-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
+}
+
 .panel-heading,
 .button-row,
 .form-row {
@@ -1861,6 +1914,74 @@ label {
   gap: 0.45rem;
 }
 
+.editor-split {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.32fr) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.editor-rail {
+  display: grid;
+  gap: 0.55rem;
+  border: 1px solid rgba(182, 106, 24, 0.14);
+  border-radius: var(--radius-sm);
+  background: #fffaf0;
+  padding: 0.65rem;
+}
+
+.editor-rail button {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: 0.15rem 0.55rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-muted);
+  text-align: left;
+  padding: 0.72rem;
+}
+
+.editor-rail button span {
+  grid-row: span 2;
+  color: var(--color-saffron);
+  font-weight: 950;
+}
+
+.editor-rail button strong {
+  color: inherit;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-rail button small {
+  color: var(--color-saffron);
+  font-weight: 800;
+}
+
+.editor-rail button.active {
+  border-color: rgba(182, 106, 24, 0.3);
+  background: #fff;
+  color: var(--color-ink);
+}
+
+.editor-form-stack {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.exhibit-list {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.empty-editor-state {
+  border: 1px dashed rgba(182, 106, 24, 0.28);
+  border-radius: var(--radius-sm);
+  background: #fffaf0;
+  padding: 1.2rem;
+}
+
 .status-chip {
   border: 1px solid rgba(182, 106, 24, 0.28);
   border-radius: var(--radius-sm);
@@ -1906,39 +2027,90 @@ label {
   background: #fff;
 }
 
+.rich-editor.disabled {
+  background: #faf7ef;
+}
+
 .editor-toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: 0.45rem;
   border-bottom: 1px solid var(--color-line);
-  background: #fffaf0;
-  padding: 0.45rem;
+  background: linear-gradient(180deg, #fffaf0, #fff4df);
+  padding: 0.5rem;
+}
+
+.toolbar-group {
+  display: inline-flex;
+  gap: 0.25rem;
+  border-right: 1px solid rgba(182, 106, 24, 0.18);
+  padding-right: 0.45rem;
+}
+
+.toolbar-group:last-child {
+  border-right: 0;
+  padding-right: 0;
 }
 
 .editor-toolbar button {
+  display: inline-grid;
+  place-items: center;
   min-width: 2.1rem;
-  padding: 0.35rem 0.48rem;
+  height: 2rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  font-weight: 900;
+  padding: 0.3rem 0.48rem;
+}
+
+.editor-toolbar button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
 }
 
 .editor-toolbar button.active {
   border-color: var(--color-saffron);
-  background: #fff3df;
+  background: #fff;
+  color: var(--color-saffron);
+  box-shadow: 0 6px 14px rgba(116, 69, 28, 0.08);
+}
+
+.editor-toolbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
 }
 
 .rich-editor-body {
   min-height: 8.5rem;
-  padding: 0.85rem;
+  color: #4f463e;
+  font-size: 1rem;
+  padding: 0.95rem;
   outline: none;
-  line-height: 1.65;
+  line-height: 1.72;
 }
 
 .rich-editor-body p:last-child {
   margin-bottom: 0;
 }
 
+.rich-editor-body h2,
+.rich-editor-body h3 {
+  color: var(--color-ink);
+  line-height: 1.24;
+  margin-bottom: 0.65rem;
+}
+
 .rich-editor-body blockquote {
   border-left: 3px solid var(--color-saffron);
   margin-left: 0;
+  background: #fffaf0;
   padding-left: 1rem;
 }
 
@@ -2090,9 +2262,19 @@ label {
   }
 
   .admin-editor-grid,
+  .editor-split,
   .concept-list,
   .admin-data-grid {
     grid-template-columns: 1fr;
+  }
+
+  .editor-workflow-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-context-panel {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .data-table-panel {

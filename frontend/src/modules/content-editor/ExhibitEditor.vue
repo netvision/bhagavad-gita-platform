@@ -54,12 +54,12 @@ function payload() {
     </div>
     <label>
       Title
-      <input v-model.trim="form.title" required />
+      <input v-model.trim="form.title" :disabled="busy" required />
     </label>
     <div class="form-row">
       <label>
         Field type
-        <select v-model="form.field_type">
+        <select v-model="form.field_type" :disabled="busy">
           <option value="html">HTML</option>
           <option value="link">Link</option>
           <option value="image">Image</option>
@@ -69,24 +69,24 @@ function payload() {
       </label>
       <label>
         Field format
-        <input v-model.trim="form.field_format" placeholder="story, shloka, example" />
+        <input v-model.trim="form.field_format" :disabled="busy" placeholder="story, shloka, example" />
       </label>
       <label>
         Order
-        <input v-model.number="form.sort_order" type="number" />
+        <input v-model.number="form.sort_order" :disabled="busy" type="number" />
       </label>
     </div>
     <label v-if="form.field_type === 'html'">
       Value
-      <RichTextEditor v-model="form.content" placeholder="Exhibit HTML" />
+      <RichTextEditor v-model="form.content" :disabled="busy" placeholder="Exhibit HTML" />
     </label>
     <label v-else>
       Value or URL
-      <input v-model.trim="form.content" />
+      <input v-model.trim="form.content" :disabled="busy" />
     </label>
     <label>
       Media asset ID
-      <input v-model.number="form.media_asset_id" type="number" min="1" placeholder="Optional" />
+      <input v-model.number="form.media_asset_id" :disabled="busy" type="number" min="1" placeholder="Optional" />
     </label>
     <button type="button" class="primary-action" :disabled="busy || !form.title" @click="$emit('save', payload())">
       Save exhibit
