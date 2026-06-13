@@ -50,10 +50,10 @@ const routes = [
     component: AdminLayout,
     meta: { roles: adminRoles },
     children: [
-      { path: '', name: 'admin', component: AdminDashboard },
+      { path: '', name: 'admin', component: AdminDashboard, meta: { roles: ['super_admin'] } },
       { path: 'content', name: 'admin-content', component: ContentWorkspace },
-      { path: 'users', name: 'admin-users', component: UserManagement },
-      { path: 'subscription', name: 'admin-subscription', component: SubscriptionSettings },
+      { path: 'users', name: 'admin-users', component: UserManagement, meta: { roles: ['super_admin'] } },
+      { path: 'subscription', name: 'admin-subscription', component: SubscriptionSettings, meta: { roles: ['super_admin'] } },
       { path: 'media', name: 'admin-media', component: MediaLibrary },
     ],
   },
@@ -72,7 +72,9 @@ router.beforeEach((to) => {
   auth.clearInvalidSession();
 
   const isPublic = to.matched.some((record) => record.meta.public);
-  const requiredRoles = to.matched.flatMap((record) => record.meta.roles || []);
+  const roleRequirements = to.matched
+    .map((record) => record.meta.roles)
+    .filter((roles) => roles?.length);
 
   if (isPublic) {
     if (auth.isAuthenticated && to.name === 'login') {
@@ -88,7 +90,7 @@ router.beforeEach((to) => {
     };
   }
 
-  if (requiredRoles.length && !auth.hasAnyRole(requiredRoles)) {
+  if (roleRequirements.some((roles) => !auth.hasAnyRole(roles))) {
     return defaultRouteForRole(auth.user?.role);
   }
 

@@ -22,10 +22,10 @@ function logout() {
         <span>Gita Admin</span>
       </RouterLink>
       <nav class="side-nav" aria-label="Admin navigation">
-        <RouterLink to="/admin">Overview</RouterLink>
+        <RouterLink v-if="auth.hasRole('super_admin')" to="/admin">Overview</RouterLink>
         <RouterLink to="/admin/content">Content</RouterLink>
-        <RouterLink to="/admin/users">Users</RouterLink>
-        <RouterLink to="/admin/subscription">Subscription</RouterLink>
+        <RouterLink v-if="auth.hasRole('super_admin')" to="/admin/users">Users</RouterLink>
+        <RouterLink v-if="auth.hasRole('super_admin')" to="/admin/subscription">Subscription</RouterLink>
         <RouterLink to="/admin/media">Media</RouterLink>
       </nav>
       <div class="side-footer">

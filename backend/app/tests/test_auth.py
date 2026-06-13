@@ -154,16 +154,16 @@ def test_malformed_stored_password_hash_rejected(client, db_session):
     assert response.status_code == 401
 
 
-def test_content_admin_can_set_user_password(client, db_session):
+def test_super_admin_can_set_user_password(client, db_session):
     organization = create_org(db_session)
     admin = create_user(
         db_session,
         organization,
-        username="content-admin",
-        email="content-admin@example.com",
+        username="super-admin",
+        email="super-admin@example.com",
         password="admin-pass",
-        full_name="Content Admin",
-        role="content_admin",
+        full_name="Super Admin",
+        role="super_admin",
     )
     student = create_user(
         db_session,
@@ -203,3 +203,24 @@ def test_content_admin_can_set_user_password(client, db_session):
     assert response.status_code == 200
     assert old_login.status_code == 401
     assert new_login.status_code == 200
+
+
+def test_content_admin_cannot_manage_users(client, db_session):
+    organization = create_org(db_session)
+    admin = create_user(
+        db_session,
+        organization,
+        username="content-admin",
+        email="content-admin@example.com",
+        password="admin-pass",
+        full_name="Content Admin",
+        role="content_admin",
+    )
+
+    token = create_access_token(str(admin.id))
+    response = client.get(
+        "/api/admin/users",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 403

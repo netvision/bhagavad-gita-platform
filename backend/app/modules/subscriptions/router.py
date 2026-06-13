@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
-from app.core.permissions import require_content_admin, require_platform_admin
+from app.core.permissions import require_platform_admin
 from app.db.session import get_db
 from app.modules.subscriptions import service
 from app.modules.subscriptions.models import Subscription
@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api/admin/subscriptions")
 @router.get("", response_model=list[SubscriptionRead])
 def get_subscriptions(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_content_admin),
+    current_user: User = Depends(require_platform_admin),
 ) -> list[SubscriptionRead]:
     return [_subscription_read(item) for item in service.list_subscriptions(db, current_user)]
 

@@ -6,5 +6,7 @@ export function roleCanAccess(userRole, allowedRoles = []) {
 }
 
 export function defaultRouteForRole(role) {
-  return adminRoles.includes(role) ? '/admin' : '/learn';
+  if (role === 'super_admin') return '/admin';
+  if (role === 'content_admin') return '/admin/content';
+  return '/learn';
 }
