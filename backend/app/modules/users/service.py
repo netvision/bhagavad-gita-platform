@@ -48,6 +48,8 @@ def update_user(db: Session, user_id: int, payload: UserUpdate, current_user: Us
     user.grade_label = payload.grade_label
     user.section_label = payload.section_label
     user.is_active = payload.is_active
+    if payload.password:
+        user.hashed_password = hash_password(payload.password)
     return _commit_user(db, user)
 
 

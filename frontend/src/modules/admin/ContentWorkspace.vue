@@ -15,6 +15,7 @@ import {
   getChapterVersion,
   listAdminChapters,
   listAdminPhases,
+  listChapterVersions,
   listConcepts,
   publishChapterVersion,
   updateChapter,
@@ -29,6 +30,7 @@ const phases = ref([]);
 const selectedChapter = ref(null);
 const selectedPhase = ref(null);
 const version = ref(null);
+const versionHistory = ref([]);
 const concepts = ref([]);
 const selectedConcept = ref(null);
 const selectedExhibit = ref(null);
@@ -64,6 +66,14 @@ const conceptForm = reactive({
 });
 
 const canEditDraft = computed(() => version.value?.status === 'draft');
+const workflowHint = computed(() => {
+  if (!selectedChapter.value && !version.value) return 'Create a new chapter draft or select a chapter from the left.';
+  if (!version.value) return 'This chapter has no version yet. Use Create chapter draft to begin.';
+  if (!canEditDraft.value) return 'This is a read-only version. Create a draft before editing chapter, concepts, or exhibits.';
+  if (activeSection.value === 'chapter') return 'Edit chapter title, summary, body, phase, slug, and order. Then save the draft.';
+  if (activeSection.value === 'concepts') return 'Select an existing concept or create a new concept, then save it into this draft.';
+  return 'Select the concept first, then add or edit exhibits for that concept.';
+});
 
 function slugify(value) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'chapter';
@@ -134,13 +144,29 @@ async function selectChapter(chapter) {
   selectedChapter.value = chapter;
   selectedConcept.value = null;
   selectedExhibit.value = null;
+  activeSection.value = 'chapter';
   concepts.value = [];
-  if (!chapter.current_version_id) {
+  versionHistory.value = await listChapterVersions(chapter.id);
+  const preferredVersion = versionHistory.value.find((item) => item.status === 'draft')
+    || versionHistory.value.find((item) => item.status === 'published')
+    || versionHistory.value[0];
+  if (!preferredVersion) {
     version.value = null;
     fillVersionForm(null);
     return;
   }
-  version.value = await getChapterVersion(chapter.current_version_id);
+  version.value = await getChapterVersion(preferredVersion.id);
+  fillVersionForm(version.value);
+  concepts.value = await listConcepts(version.value.id);
+}
+
+async function selectVersion(item) {
+  if (!item?.id) return;
+  resetMessages();
+  selectedConcept.value = null;
+  selectedExhibit.value = null;
+  activeSection.value = 'chapter';
+  version.value = await getChapterVersion(item.id);
   fillVersionForm(version.value);
   concepts.value = await listConcepts(version.value.id);
 }
@@ -168,6 +194,7 @@ async function createNewChapter() {
       body: chapterForm.body || null,
     });
     await refreshChapters();
+    versionHistory.value = await listChapterVersions(created.chapter_id);
     const chapter = chapters.value.find((item) => item.id === created.chapter_id);
     if (chapter) await selectChapter(chapter);
     notice.value = 'Chapter draft created.';
@@ -195,6 +222,7 @@ async function saveVersion() {
   await withBusy(async () => {
     version.value = await updateChapterVersion(version.value.id, versionPayload());
     await refreshChapters();
+    if (selectedChapter.value) versionHistory.value = await listChapterVersions(selectedChapter.value.id);
     notice.value = 'Draft saved.';
   });
 }
@@ -234,6 +262,7 @@ async function makeDraft() {
   await withBusy(async () => {
     version.value = await createDraft(selectedChapter.value.id);
     await refreshChapters();
+    versionHistory.value = await listChapterVersions(selectedChapter.value.id);
     fillVersionForm(version.value);
     concepts.value = await listConcepts(version.value.id);
     notice.value = 'Draft created from current content.';
@@ -245,6 +274,7 @@ async function publishDraft() {
   await withBusy(async () => {
     version.value = await publishChapterVersion(version.value.id);
     await refreshChapters();
+    if (selectedChapter.value) versionHistory.value = await listChapterVersions(selectedChapter.value.id);
     notice.value = 'Draft published. Learners now see this version.';
   });
 }
@@ -350,7 +380,7 @@ onMounted(async () => {
             <p class="section-label">Chapters</p>
             <h2>{{ chapters.length }}</h2>
           </div>
-          <button type="button" @click="selectedChapter = null; version = null; concepts = []; activeSection = 'chapter'; fillVersionForm(null)">New</button>
+          <button type="button" @click="selectedChapter = null; version = null; versionHistory = []; concepts = []; activeSection = 'chapter'; fillVersionForm(null)">New</button>
         </div>
         <button
           v-for="chapter in chapters"
@@ -405,6 +435,14 @@ onMounted(async () => {
             </p>
           </div>
           <strong class="status-chip">{{ version?.status || 'draft' }}</strong>
+        </section>
+
+        <section class="editor-workflow-help" :class="{ locked: version && !canEditDraft }">
+          <strong>{{ canEditDraft || !version ? 'Workflow' : 'Read-only version' }}</strong>
+          <p>{{ workflowHint }}</p>
+          <button v-if="selectedChapter && version && !canEditDraft" type="button" :disabled="busy" @click="makeDraft">
+            Create editable draft
+          </button>
         </section>
 
         <nav class="editor-workflow-tabs" aria-label="Content editing sections">
@@ -560,7 +598,15 @@ onMounted(async () => {
         </section>
       </main>
 
-      <PublishPanel :version="version" :busy="busy" @save="saveVersion" @draft="makeDraft" @publish="publishDraft" />
+      <PublishPanel
+        :version="version"
+        :versions="versionHistory"
+        :busy="busy"
+        @save="saveVersion"
+        @draft="makeDraft"
+        @publish="publishDraft"
+        @select-version="selectVersion"
+      />
     </div>
   </section>
 </template>

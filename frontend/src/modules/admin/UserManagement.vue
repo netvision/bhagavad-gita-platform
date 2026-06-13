@@ -46,7 +46,7 @@ function payload(includePassword = false) {
     section_label: form.section_label || null,
     is_active: form.is_active,
   };
-  if (includePassword) data.password = form.password;
+  if (includePassword || form.password) data.password = form.password;
   return data;
 }
 
@@ -71,7 +71,8 @@ async function save() {
   await run(async () => {
     if (selected.value) {
       await updateUser(selected.value.id, payload(false));
-      notice.value = 'User updated.';
+      notice.value = form.password ? 'User updated and password changed.' : 'User updated.';
+      form.password = '';
     } else {
       await createUser(payload(true));
       notice.value = 'User created.';
@@ -139,7 +140,10 @@ onMounted(() => run(refresh));
         <label>Name<input v-model.trim="form.full_name" /></label>
         <label>Email<input v-model.trim="form.email" type="email" /></label>
         <label>Username / admission number<input v-model.trim="form.username" required /></label>
-        <label v-if="!selected">Password<input v-model="form.password" type="password" minlength="8" required /></label>
+        <label>
+          {{ selected ? 'New password' : 'Password' }}
+          <input v-model="form.password" type="password" minlength="8" :required="!selected" :placeholder="selected ? 'Leave blank to keep current password' : ''" />
+        </label>
         <div class="form-row">
           <label>Role<select v-model="form.role"><option>student</option><option>teacher</option><option>content_admin</option><option>super_admin</option></select></label>
           <label>Grade<input v-model.trim="form.grade_label" placeholder="Grade 9" /></label>

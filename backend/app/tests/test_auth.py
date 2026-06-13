@@ -1,4 +1,4 @@
-from app.core.security import hash_password
+from app.core.security import create_access_token, hash_password
 from app.modules.organizations.models import Organization
 from app.modules.users.models import User
 
@@ -152,3 +152,54 @@ def test_malformed_stored_password_hash_rejected(client, db_session):
     )
 
     assert response.status_code == 401
+
+
+def test_content_admin_can_set_user_password(client, db_session):
+    organization = create_org(db_session)
+    admin = create_user(
+        db_session,
+        organization,
+        username="content-admin",
+        email="content-admin@example.com",
+        password="admin-pass",
+        full_name="Content Admin",
+        role="content_admin",
+    )
+    student = create_user(
+        db_session,
+        organization,
+        username="student-password-change",
+        email="password-change@example.com",
+        password="old-password",
+        full_name="Student Password",
+        role="student",
+    )
+
+    token = create_access_token(str(admin.id))
+    response = client.put(
+        f"/api/admin/users/{student.id}",
+        json={
+            "organization_id": organization.id,
+            "email": student.email,
+            "username": student.username,
+            "password": "new-password",
+            "full_name": student.full_name,
+            "role": student.role,
+            "grade_label": None,
+            "section_label": None,
+            "is_active": True,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    old_login = client.post(
+        "/api/auth/login",
+        json={"identifier": student.username, "password": "old-password"},
+    )
+    new_login = client.post(
+        "/api/auth/login",
+        json={"identifier": student.username, "password": "new-password"},
+    )
+
+    assert response.status_code == 200
+    assert old_login.status_code == 401
+    assert new_login.status_code == 200

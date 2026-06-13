@@ -1812,6 +1812,39 @@ label {
   opacity: 0.52;
 }
 
+.editor-workflow-help {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid rgba(40, 112, 95, 0.22);
+  border-radius: var(--radius-sm);
+  background: rgba(40, 112, 95, 0.07);
+  color: var(--color-ink);
+  padding: 0.85rem 1rem;
+}
+
+.editor-workflow-help.locked {
+  border-color: rgba(182, 106, 24, 0.24);
+  background: #fff4df;
+}
+
+.editor-workflow-help strong {
+  flex: 0 0 auto;
+  color: var(--color-saffron);
+}
+
+.editor-workflow-help p {
+  flex: 1 1 auto;
+  margin: 0;
+  color: var(--color-muted);
+  font-weight: 700;
+}
+
+.editor-workflow-help button {
+  flex: 0 0 auto;
+}
+
 .panel-heading,
 .button-row,
 .form-row {
@@ -2018,6 +2051,49 @@ label {
 .publish-panel dd {
   margin: 0;
   text-align: right;
+}
+
+.version-history {
+  display: grid;
+  gap: 0.45rem;
+  border-top: 1px solid var(--color-line);
+  padding-top: 0.9rem;
+}
+
+.version-history h3 {
+  margin-bottom: 0.2rem;
+}
+
+.version-history button {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  gap: 0.1rem 0.55rem;
+  border-color: rgba(182, 106, 24, 0.16);
+  background: #fffaf0;
+  color: var(--color-muted);
+  text-align: left;
+  padding: 0.62rem;
+}
+
+.version-history button span {
+  grid-row: span 2;
+  color: var(--color-saffron);
+  font-weight: 950;
+}
+
+.version-history button strong {
+  color: inherit;
+  text-transform: uppercase;
+}
+
+.version-history button small {
+  color: var(--color-muted);
+}
+
+.version-history button.active {
+  border-color: rgba(216, 126, 34, 0.42);
+  background: #fff;
+  color: var(--color-ink);
 }
 
 .rich-editor {
@@ -2273,6 +2349,11 @@ label {
   }
 
   .editor-context-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .editor-workflow-help {
     align-items: stretch;
     flex-direction: column;
   }

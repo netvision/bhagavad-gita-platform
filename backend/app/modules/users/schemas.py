@@ -31,6 +31,7 @@ class UserUpdate(BaseModel):
     organization_id: int | None = None
     email: EmailStr | None = None
     username: str = Field(min_length=2, max_length=100)
+    password: str | None = Field(default=None, min_length=8, max_length=128)
     full_name: str | None = None
     role: Role
     grade_label: str | None = None

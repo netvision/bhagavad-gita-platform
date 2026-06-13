@@ -131,6 +131,11 @@ def post_admin_chapter_draft(chapter_id: int, db: Session = Depends(get_db)) -> 
     return service.create_draft_from_current(db, chapter_id)
 
 
+@admin_router.get("/chapters/{chapter_id}/versions", response_model=list[ChapterVersionRead])
+def get_admin_chapter_versions(chapter_id: int, db: Session = Depends(get_db)) -> list[ChapterVersion]:
+    return service.list_chapter_versions(db, chapter_id)
+
+
 @admin_router.put("/chapter-versions/{version_id}", response_model=ChapterVersionRead)
 def put_admin_chapter_version(
     version_id: int,

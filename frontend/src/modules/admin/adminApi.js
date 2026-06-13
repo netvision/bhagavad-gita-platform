@@ -32,6 +32,10 @@ export function createDraft(chapterId) {
   return api(`/api/admin/content/chapters/${chapterId}/draft`, { method: 'POST' });
 }
 
+export function listChapterVersions(chapterId) {
+  return api(`/api/admin/content/chapters/${chapterId}/versions`);
+}
+
 export function getChapterVersion(versionId) {
   return api(`/api/admin/content/chapter-versions/${versionId}`);
 }

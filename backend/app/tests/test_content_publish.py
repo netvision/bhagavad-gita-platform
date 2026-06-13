@@ -190,6 +190,22 @@ def test_content_admin_cannot_publish_already_published_or_archived_version(clie
     assert "draft" in archived_response.json()["detail"]
 
 
+def test_content_admin_can_list_chapter_version_history(client, db_session):
+    organization = create_org(db_session)
+    admin = create_user(db_session, organization, "content_admin", "content-admin-history")
+    chapter, published, draft = create_chapter_with_published_and_draft(db_session)
+
+    response = client.get(
+        f"/api/admin/content/chapters/{chapter.id}/versions",
+        headers=auth_headers(admin),
+    )
+
+    assert response.status_code == 200
+    versions = response.json()
+    assert [item["id"] for item in versions] == [draft.id, published.id]
+    assert [item["status"] for item in versions] == ["draft", "published"]
+
+
 def test_only_one_published_version_remains_after_publishing_draft(client, db_session):
     organization = create_org(db_session)
     admin = create_user(db_session, organization, "content_admin", "content-admin-single")

@@ -265,6 +265,17 @@ def get_chapter_version(db: Session, version_id: int) -> ChapterVersion:
     return version
 
 
+def list_chapter_versions(db: Session, chapter_id: int) -> list[ChapterVersion]:
+    chapter = db.get(Chapter, chapter_id)
+    if chapter is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chapter not found")
+    return db.scalars(
+        select(ChapterVersion)
+        .where(ChapterVersion.chapter_id == chapter_id)
+        .order_by(ChapterVersion.version_number.desc())
+    ).all()
+
+
 def list_version_concepts(db: Session, version_id: int) -> list[Concept]:
     version = db.scalar(
         select(ChapterVersion)
