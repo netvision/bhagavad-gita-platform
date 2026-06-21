@@ -15,6 +15,7 @@ if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
 from app.core.security import hash_password  # noqa: E402
+from app.db import models  # noqa: E402,F401
 from app.modules.users.models import User  # noqa: E402
 
 
