@@ -38,6 +38,13 @@ async function responseError(response) {
   throw error;
 }
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
+function apiUrl(path) {
+  if (!API_BASE_URL || /^https?:\/\//i.test(path)) return path;
+  return `${API_BASE_URL}${path}`;
+}
+
 export async function api(path, options = {}) {
   const headers = new Headers(options.headers || {});
   const token = readToken();
@@ -53,7 +60,7 @@ export async function api(path, options = {}) {
     body = JSON.stringify(body);
   }
 
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     headers,
     body,

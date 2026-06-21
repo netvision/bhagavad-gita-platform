@@ -83,8 +83,8 @@ Required settings:
 
 ## Ubuntu Bare-Metal Deployment
 
-1. Copy the project to `/var/www/gita-learning`.
-2. Create a Python virtual environment in `/var/www/gita-learning/backend/.venv`.
+1. Copy the project to `/home/dev/gita-learning`.
+2. Create a Python virtual environment in `/home/dev/gita-learning/backend/.venv`.
 3. Install backend requirements.
 4. Build the frontend with `npm run build`.
 5. Copy `deploy/env.example` to `/etc/gita-learning.env` and replace all secrets.
@@ -99,7 +99,7 @@ sudo systemctl enable --now gita-learning
 sudo systemctl status gita-learning
 ```
 
-10. Copy `deploy/nginx-gita-learning.conf` into your Nginx sites configuration, update `server_name`, enable it, and reload Nginx.
+10. Copy `deploy/nginx-gita-learning.conf` into your Nginx sites configuration, update `server_name` if needed, enable it, and reload Nginx. The sample serves the frontend from `gitalearning.dvmchirawa.ac.in` and proxies `/api/` to the backend on `127.0.0.1:8001`.
 
 ## Verification
 
