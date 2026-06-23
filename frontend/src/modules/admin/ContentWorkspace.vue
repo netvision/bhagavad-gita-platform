@@ -74,6 +74,10 @@ const workflowHint = computed(() => {
   if (activeSection.value === 'concepts') return 'Select an existing concept or create a new concept, then save it into this draft.';
   return 'Select the concept first, then add or edit exhibits for that concept.';
 });
+const selectedPhaseName = computed(() => {
+  const phaseId = Number(chapterForm.curriculum_phase_id);
+  return phases.value.find((phase) => phase.id === phaseId)?.name || 'No phase';
+});
 
 function slugify(value) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'chapter';
@@ -102,6 +106,17 @@ function conceptPayload() {
 function resetMessages() {
   error.value = '';
   notice.value = '';
+}
+
+function startNewChapter() {
+  selectedChapter.value = null;
+  version.value = null;
+  versionHistory.value = [];
+  concepts.value = [];
+  selectedConcept.value = null;
+  selectedExhibit.value = null;
+  activeSection.value = 'chapter';
+  fillVersionForm(null);
 }
 
 function fillVersionForm(value) {
@@ -380,7 +395,7 @@ onMounted(async () => {
             <p class="section-label">Chapters</p>
             <h2>{{ chapters.length }}</h2>
           </div>
-          <button type="button" @click="selectedChapter = null; version = null; versionHistory = []; concepts = []; activeSection = 'chapter'; fillVersionForm(null)">New</button>
+          <button type="button" @click="startNewChapter">New</button>
         </div>
         <button
           v-for="chapter in chapters"
@@ -395,14 +410,14 @@ onMounted(async () => {
           <small>{{ chapter.current_status || 'no version' }}</small>
         </button>
 
-        <section class="phase-manager">
-          <div class="panel-heading">
+        <details class="phase-manager">
+          <summary>
             <div>
               <p class="section-label">Phases</p>
-              <h2>{{ phases.length }}</h2>
+              <strong>{{ phases.length }} curriculum phases</strong>
             </div>
-            <button type="button" @click="fillPhaseForm(null)">New</button>
-          </div>
+          </summary>
+          <button type="button" class="phase-new-button" @click="fillPhaseForm(null)">New phase</button>
           <div class="phase-list">
             <button
               v-for="phase in phases"
@@ -422,7 +437,7 @@ onMounted(async () => {
             <button type="button" class="primary-action" :disabled="busy || !phaseForm.name" @click="savePhase">Save phase</button>
             <button type="button" :disabled="busy || !selectedPhase" @click="removePhase">Delete</button>
           </div>
-        </section>
+        </details>
       </aside>
 
       <main class="chapter-editor">
@@ -430,12 +445,24 @@ onMounted(async () => {
           <div>
             <p class="section-label">Current chapter</p>
             <h2>{{ chapterForm.title || 'Untitled chapter' }}</h2>
-            <p class="muted">
-              {{ version ? `Version ${version.version_number}` : 'New draft' }} - {{ concepts.length }} concepts
-            </p>
+            <div class="context-meta">
+              <span>{{ selectedPhaseName }}</span>
+              <span>{{ version ? `Version ${version.version_number}` : 'New draft' }}</span>
+              <span>{{ concepts.length }} concepts</span>
+            </div>
           </div>
           <strong class="status-chip">{{ version?.status || 'draft' }}</strong>
         </section>
+
+        <PublishPanel
+          :version="version"
+          :versions="versionHistory"
+          :busy="busy"
+          @save="saveVersion"
+          @draft="makeDraft"
+          @publish="publishDraft"
+          @select-version="selectVersion"
+        />
 
         <section class="editor-workflow-help" :class="{ locked: version && !canEditDraft }">
           <strong>{{ canEditDraft || !version ? 'Workflow' : 'Read-only version' }}</strong>
@@ -598,15 +625,6 @@ onMounted(async () => {
         </section>
       </main>
 
-      <PublishPanel
-        :version="version"
-        :versions="versionHistory"
-        :busy="busy"
-        @save="saveVersion"
-        @draft="makeDraft"
-        @publish="publishDraft"
-        @select-version="selectVersion"
-      />
     </div>
   </section>
 </template>
