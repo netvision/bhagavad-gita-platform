@@ -3,7 +3,6 @@ import re
 from tempfile import SpooledTemporaryFile
 from uuid import uuid4
 
-from botocore.exceptions import BotoCoreError, ClientError, EndpointConnectionError
 from fastapi import HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -32,13 +31,7 @@ def create_media_asset(db: Session, file: UploadFile, current_user: User, alt_te
     try:
         original_filename = file.filename or "upload"
         storage_key = _storage_key(current_user.organization_id, original_filename)
-        try:
-            storage.upload_file(upload_file, storage_key, content_type)
-        except (BotoCoreError, ClientError, EndpointConnectionError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Media storage is unavailable. Check MINIO_ENDPOINT and that MinIO is running.",
-            ) from exc
+        storage.upload_file(upload_file, storage_key, content_type)
 
         asset = MediaAsset(
             organization_id=current_user.organization_id,
@@ -81,7 +74,7 @@ def get_media_asset_url(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media asset not found")
     if current_user.role != "super_admin" and asset.organization_id != current_user.organization_id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Media asset not found")
-    return storage.get_presigned_url(asset.storage_key, expires_seconds=expires_seconds)
+    return storage.get_file_url(asset.storage_key)
 
 
 def _is_allowed_mime_type(content_type: str) -> bool:

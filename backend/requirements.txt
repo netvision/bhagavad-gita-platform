@@ -10,7 +10,6 @@ bcrypt
 python-multipart
 email-validator
 bleach
-boto3
 pytest
 httpx
 pytest-asyncio

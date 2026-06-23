@@ -1,6 +1,6 @@
 # Gita Learning Platform
 
-Subscription-based Bhagavad Gita learning platform for schools, built with FastAPI, PostgreSQL, MinIO-compatible media storage, and a Vue 3 frontend.
+Subscription-based Bhagavad Gita learning platform for schools, built with FastAPI, PostgreSQL, local media uploads, and a Vue 3 frontend.
 
 ## Structure
 
@@ -71,14 +71,11 @@ npm run build
 
 ## Media Storage
 
-The backend expects S3-compatible storage, typically MinIO for self-hosting.
+The backend stores uploaded media on the local filesystem.
 
 Required settings:
 
-- `MINIO_ENDPOINT`
-- `MINIO_BUCKET`
-- `MINIO_ACCESS_KEY`
-- `MINIO_SECRET_KEY`
+- `UPLOAD_DIR`
 - `MAX_UPLOAD_MB`
 
 ## Ubuntu Bare-Metal Deployment

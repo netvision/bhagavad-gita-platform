@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 
 import pytest
-from botocore.exceptions import EndpointConnectionError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.core.config import get_settings
@@ -54,17 +53,8 @@ def add_active_subscription(db_session, organization):
     return subscription
 
 
-def test_content_admin_can_upload_media(client, db_session, monkeypatch):
-    from app.modules.media import service
-
-    uploaded = {}
-
-    def fake_upload_file(file_obj, key, content_type):
-        uploaded["key"] = key
-        uploaded["content_type"] = content_type
-        uploaded["body"] = file_obj.read()
-
-    monkeypatch.setattr(service.storage, "upload_file", fake_upload_file)
+def test_content_admin_can_upload_media_to_local_uploads(client, db_session, monkeypatch, tmp_path):
+    monkeypatch.setattr(get_settings(), "upload_dir", str(tmp_path))
     organization = create_org(db_session)
     admin = create_user(db_session, organization, "content_admin", "content-admin")
 
@@ -85,21 +75,11 @@ def test_content_admin_can_upload_media(client, db_session, monkeypatch):
     assert payload["visibility"] == "private"
     assert payload["alt_text"] == "Krishna and Arjuna"
     assert payload["storage_key"].endswith("-Lesson_Image.JPG")
-    assert uploaded["key"] == payload["storage_key"]
-    assert uploaded["content_type"] == "image/jpeg"
-    assert uploaded["body"] == b"image-bytes"
+    assert (tmp_path / payload["storage_key"]).read_bytes() == b"image-bytes"
 
 
 def test_upload_rejects_unsupported_mime_type(client, db_session, monkeypatch):
-    from app.modules.media import service
-
-    called = False
-
-    def fake_upload_file(file_obj, key, content_type):
-        nonlocal called
-        called = True
-
-    monkeypatch.setattr(service.storage, "upload_file", fake_upload_file)
+    monkeypatch.setattr(get_settings(), "upload_dir", "/tmp/unused-gita-uploads")
     organization = create_org(db_session)
     admin = create_user(db_session, organization, "content_admin", "content-admin")
 
@@ -110,19 +90,10 @@ def test_upload_rejects_unsupported_mime_type(client, db_session, monkeypatch):
     )
 
     assert response.status_code == 422
-    assert called is False
 
 
-def test_upload_rejects_oversized_file_without_calling_storage(client, db_session, monkeypatch):
-    from app.modules.media import service
-
-    called = False
-
-    def fake_upload_file(file_obj, key, content_type):
-        nonlocal called
-        called = True
-
-    monkeypatch.setattr(service.storage, "upload_file", fake_upload_file)
+def test_upload_rejects_oversized_file_without_writing_file(client, db_session, monkeypatch, tmp_path):
+    monkeypatch.setattr(get_settings(), "upload_dir", str(tmp_path))
     monkeypatch.setattr(get_settings(), "max_upload_mb", 0)
     organization = create_org(db_session)
     admin = create_user(db_session, organization, "content_admin", "content-admin")
@@ -134,44 +105,16 @@ def test_upload_rejects_oversized_file_without_calling_storage(client, db_sessio
     )
 
     assert response.status_code == 413
-    assert called is False
+    assert list(tmp_path.rglob("*")) == []
 
 
-def test_upload_returns_503_when_storage_is_unavailable(client, db_session, monkeypatch):
+def test_upload_deletes_local_file_when_db_commit_fails(db_session, monkeypatch, tmp_path):
     from app.modules.media import service
-
-    def fake_upload_file(file_obj, key, content_type):
-        raise EndpointConnectionError(endpoint_url="http://127.0.0.1:9000")
-
-    monkeypatch.setattr(service.storage, "upload_file", fake_upload_file)
-    organization = create_org(db_session)
-    admin = create_user(db_session, organization, "content_admin", "content-admin")
-
-    response = client.post(
-        "/api/admin/media",
-        files={"file": ("asset.png", b"image-bytes", "image/png")},
-        headers=auth_headers(admin),
-    )
-
-    assert response.status_code == 503
-    assert response.json()["detail"].startswith("Media storage is unavailable")
-
-
-def test_upload_deletes_storage_object_when_db_commit_fails(db_session, monkeypatch):
-    from app.modules.media import service
-
-    uploaded = {}
-    deleted = []
-
-    def fake_upload_file(file_obj, key, content_type):
-        uploaded["key"] = key
-        uploaded["body"] = file_obj.read()
 
     def fake_commit():
         raise SQLAlchemyError("commit failed")
 
-    monkeypatch.setattr(service.storage, "upload_file", fake_upload_file)
-    monkeypatch.setattr(service.storage, "delete_file", lambda key: deleted.append(key))
+    monkeypatch.setattr(get_settings(), "upload_dir", str(tmp_path))
     organization = create_org(db_session)
     admin = create_user(db_session, organization, "content_admin", "content-admin")
     monkeypatch.setattr(db_session, "commit", fake_commit)
@@ -179,25 +122,19 @@ def test_upload_deletes_storage_object_when_db_commit_fails(db_session, monkeypa
     with pytest.raises(SQLAlchemyError, match="commit failed"):
         service.create_media_asset(db_session, _Upload("asset.png", b"image-bytes", "image/png"), admin)
 
-    assert uploaded["body"] == b"image-bytes"
-    assert deleted == [uploaded["key"]]
+    assert list(tmp_path.rglob("*.*")) == []
 
 
-def test_upload_closes_validated_file_after_success(db_session, monkeypatch):
+def test_upload_closes_validated_file_after_success(db_session, monkeypatch, tmp_path):
     from app.modules.media import service
 
-    uploaded = {}
-
-    def fake_upload_file(file_obj, key, content_type):
-        uploaded["file_obj"] = file_obj
-
-    monkeypatch.setattr(service.storage, "upload_file", fake_upload_file)
+    monkeypatch.setattr(get_settings(), "upload_dir", str(tmp_path))
     organization = create_org(db_session)
     admin = create_user(db_session, organization, "content_admin", "content-admin")
 
-    service.create_media_asset(db_session, _Upload("asset.png", b"image-bytes", "image/png"), admin)
+    upload = service.create_media_asset(db_session, _Upload("asset.png", b"image-bytes", "image/png"), admin)
 
-    assert uploaded["file_obj"].closed is True
+    assert (tmp_path / upload.storage_key).read_bytes() == b"image-bytes"
 
 
 def test_content_admin_can_list_media(client, db_session):
@@ -230,10 +167,7 @@ def test_content_admin_can_list_media(client, db_session):
     assert [item["id"] for item in response.json()] == [asset.id]
 
 
-def test_learning_user_can_get_media_signed_url(client, db_session, monkeypatch):
-    from app.modules.media import service
-
-    monkeypatch.setattr(service.storage, "get_presigned_url", lambda key, expires_seconds=3600: f"https://cdn.test/{key}")
+def test_learning_user_can_get_local_media_url(client, db_session):
     organization = create_org(db_session)
     student = create_user(db_session, organization, "student", "student-one")
     add_active_subscription(db_session, organization)
@@ -251,7 +185,7 @@ def test_learning_user_can_get_media_signed_url(client, db_session, monkeypatch)
     response = client.get(f"/api/media/{asset.id}/url", headers=auth_headers(student))
 
     assert response.status_code == 200
-    assert response.json() == {"url": "https://cdn.test/media/lesson-audio.mp3", "expires_seconds": 3600}
+    assert response.json() == {"url": "/uploads/media/lesson-audio.mp3", "expires_seconds": 3600}
 
 
 class _Upload:

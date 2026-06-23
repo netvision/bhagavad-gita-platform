@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.core.config import get_settings
+from app.core.storage import upload_root
 from app.modules.auth.router import router as auth_router
 from app.modules.content.router import admin_router as content_admin_router
 from app.modules.content.router import learning_router
@@ -51,6 +52,8 @@ FRONTEND_DIST = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 
 if (FRONTEND_DIST / "assets").exists():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIST / "assets"), name="frontend-assets")
+
+app.mount("/uploads", StaticFiles(directory=upload_root()), name="uploads")
 
 
 @app.get("/{path:path}", include_in_schema=False)

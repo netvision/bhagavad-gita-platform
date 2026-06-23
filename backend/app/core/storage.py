@@ -1,39 +1,47 @@
+from pathlib import Path
+import shutil
 from typing import BinaryIO
-
-import boto3
 
 from app.core.config import get_settings
 
 
-def _client():
-    settings = get_settings()
-    return boto3.client(
-        "s3",
-        endpoint_url=settings.minio_endpoint,
-        aws_access_key_id=settings.minio_access_key,
-        aws_secret_access_key=settings.minio_secret_key,
-    )
+BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
-def upload_file(file_obj: BinaryIO, key: str, content_type: str) -> None:
-    settings = get_settings()
-    _client().upload_fileobj(
-        file_obj,
-        settings.minio_bucket,
-        key,
-        ExtraArgs={"ContentType": content_type},
-    )
+def upload_root() -> Path:
+    upload_dir = Path(get_settings().upload_dir)
+    if not upload_dir.is_absolute():
+        upload_dir = BACKEND_DIR / upload_dir
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    return upload_dir
+
+
+def upload_file(file_obj: BinaryIO, key: str, content_type: str | None = None) -> None:
+    destination = _path_for_key(key)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    file_obj.seek(0)
+    with destination.open("wb") as output:
+        shutil.copyfileobj(file_obj, output)
 
 
 def delete_file(key: str) -> None:
-    settings = get_settings()
-    _client().delete_object(Bucket=settings.minio_bucket, Key=key)
+    path = _path_for_key(key)
+    if path.exists():
+        path.unlink()
 
 
-def get_presigned_url(key: str, expires_seconds: int = 3600) -> str:
-    settings = get_settings()
-    return _client().generate_presigned_url(
-        "get_object",
-        Params={"Bucket": settings.minio_bucket, "Key": key},
-        ExpiresIn=expires_seconds,
-    )
+def get_file_url(key: str) -> str:
+    return f"/uploads/{_safe_key(key)}"
+
+
+def _path_for_key(key: str) -> Path:
+    root = upload_root().resolve()
+    path = (root / _safe_key(key)).resolve()
+    if root != path and root not in path.parents:
+        raise ValueError("Storage key escapes upload directory")
+    return path
+
+
+def _safe_key(key: str) -> str:
+    parts = [part for part in Path(key).parts if part not in ("", ".", "..")]
+    return "/".join(parts)

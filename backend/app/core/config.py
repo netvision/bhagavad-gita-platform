@@ -12,10 +12,7 @@ class Settings(BaseSettings):
     secret_key: str = "change-this-in-production"
     access_token_minutes: int = 60
     allowed_origins: str = "http://127.0.0.1:5173,http://localhost:5173,http://127.0.0.1:8001"
-    minio_endpoint: str = "http://127.0.0.1:9000"
-    minio_bucket: str = "gita-learning"
-    minio_access_key: str = "minioadmin"
-    minio_secret_key: str = "minioadmin"
+    upload_dir: str = "uploads"
     max_upload_mb: int = 100
 
     @model_validator(mode="after")
@@ -25,9 +22,6 @@ class Settings(BaseSettings):
 
         if self.secret_key == "change-this-in-production":
             raise ValueError("secret_key must be changed in production")
-
-        if self.minio_access_key == "minioadmin" or self.minio_secret_key == "minioadmin":
-            raise ValueError("MinIO credentials must be changed in production")
 
         return self
 
